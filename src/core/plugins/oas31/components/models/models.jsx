@@ -1,7 +1,7 @@
 /**
  * @prettier
  */
-import React, { useCallback, useEffect } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import PropTypes from "prop-types"
 import classNames from "classnames"
 
@@ -20,10 +20,13 @@ const Models = ({
   const { docExpansion, defaultModelsExpandDepth } = getConfigs()
   const isOpenDefault = defaultModelsExpandDepth > 0 && docExpansion !== "none"
   const isOpen = layoutSelectors.isShown(schemasPath, isOpenDefault)
+  const [showDialog, setShowDialog] = useState(false)
   const Collapse = getComponent("Collapse")
   const JSONSchema202012 = getComponent("JSONSchema202012")
   const ArrowUpIcon = getComponent("ArrowUpIcon")
   const ArrowDownIcon = getComponent("ArrowDownIcon")
+  const CloseIcon = getComponent("CloseIcon")
+  const Button = getComponent("Button")
   const { getTitle } = fn.jsonSchema202012.useFn()
 
   /**
@@ -72,6 +75,19 @@ const Models = ({
     }
   }
 
+  const openDialog = useCallback(() => {
+    setShowDialog(true)
+  }, [])
+  
+  const closeDialog = useCallback(() => {
+    setShowDialog(false)
+  }, [])
+  
+  const handleAddSchema = useCallback(() => {
+    // TODO: Implement schema addition logic
+    closeDialog()
+  }, [closeDialog])
+
   /**
    * Rendering.
    */
@@ -81,39 +97,64 @@ const Models = ({
   }
 
   return (
-    <section
-      className={classNames("models", { "is-open": isOpen })}
-      ref={handleModelsRef}
-    >
-      <h4>
-        <button
-          aria-expanded={isOpen}
-          className="models-control"
-          onClick={handleModelsExpand}
-        >
-          <span>Schemas</span>
-          {isOpen ? <ArrowUpIcon /> : <ArrowDownIcon />}
-        </button>
-      </h4>
-      <Collapse isOpened={isOpen}>
-        <div className="models-actions">
-          <button className="btn tags-badges-add models-add-btn" title="Add">Add</button>
-        </div>
-        {Object.entries(schemas).map(([schemaName, schema]) => {
-          const name = getTitle(schema, { lookup: "basic" }) || schemaName
+    <>
+      <section
+        className={classNames("models", { "is-open": isOpen })}
+        ref={handleModelsRef}
+      >
+        <h4>
+          <button
+            aria-expanded={isOpen}
+            className="models-control"
+            onClick={handleModelsExpand}
+          >
+            <span>Schemas</span>
+            {isOpen ? <ArrowUpIcon /> : <ArrowDownIcon />}
+          </button>
+        </h4>
+        <Collapse isOpened={isOpen}>
+          <div className="models-actions">
+            <button className="btn tags-badges-add models-add-btn" title="Add" onClick={openDialog}>Add</button>
+          </div>
+          {Object.entries(schemas).map(([schemaName, schema]) => {
+            const name = getTitle(schema, { lookup: "basic" }) || schemaName
 
-          return (
-            <JSONSchema202012
-              key={schemaName}
-              ref={handleJSONSchema202012Ref(schemaName)}
-              schema={schema}
-              name={name}
-              onExpand={handleJSONSchema202012Expand(schemaName)}
-            />
-          )
-        })}
-      </Collapse>
-    </section>
+            return (
+              <JSONSchema202012
+                key={schemaName}
+                ref={handleJSONSchema202012Ref(schemaName)}
+                schema={schema}
+                name={name}
+                onExpand={handleJSONSchema202012Expand(schemaName)}
+              />
+            )
+          })}
+        </Collapse>
+      </section>
+      {showDialog && (
+        <div className="dialog-ux">
+          <div className="backdrop-ux" onClick={closeDialog}></div>
+          <div className="modal-ux">
+            <div className="modal-dialog-ux">
+              <div className="modal-ux-inner">
+                <div className="modal-ux-header">
+                  <h3>Add Schema</h3>
+                  <button type="button" className="close-modal" onClick={closeDialog}>
+                    {CloseIcon ? <CloseIcon /> : "✕"}
+                  </button>
+                </div>
+                <div className="modal-ux-content">
+                  <div className="modal-actions-row">
+                  <Button className="btn modal-btn" onClick={closeDialog}>Cancel</Button>
+                  <Button className="btn modal-btn" onClick={handleAddSchema}>Add</Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
