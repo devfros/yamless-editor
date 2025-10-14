@@ -96,6 +96,9 @@ const Models = ({
         </button>
       </h4>
       <Collapse isOpened={isOpen}>
+        <div className="models-actions">
+          <button className="btn tags-badges-add models-add-btn" title="Add">Add</button>
+        </div>
         {Object.entries(schemas).map(([schemaName, schema]) => {
           const name = getTitle(schema, { lookup: "basic" }) || schemaName
 

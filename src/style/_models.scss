@@ -212,6 +212,21 @@ section.models {
     &:hover {
       background: rgba($section-models-h4-background-color-hover, 0.02);
     }
+
+  }
+
+  // Flex actions row inside Collapse; aligns controls to the right
+  .models-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 20px 0 20px;
+  }
+
+  // Ensure tags-badges-add styling is used, but disable its absolute positioning in models
+  .models-add-btn {
+    position: static;
+    right: auto;
+    bottom: auto;
   }
 
   h5 {
