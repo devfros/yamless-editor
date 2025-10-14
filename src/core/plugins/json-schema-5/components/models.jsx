@@ -73,9 +73,6 @@ export default class Models extends Component {
         </button>
       </h4>
       <Collapse isOpened={showModels}>
-        <div className="models-actions">
-          <button className="btn tags-badges-add models-add-btn" title="Add">Add</button>
-        </div>
         {
           definitions.entrySeq().map(([name])=>{
 
