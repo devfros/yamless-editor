@@ -89,6 +89,124 @@
       margin-top: 15px;
       justify-content: flex-end;
     }
+
+    .form-section {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+
+      &:last-of-type {
+        border-bottom: none;
+      }
+
+      h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
+        color: #333;
+      }
+    }
+
+    .form-error {
+      color: #d32f2f;
+      font-size: 12px;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    .property-row {
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 15px;
+      background: #fafafa;
+
+      .property-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 10px;
+
+        .form-field {
+          margin-bottom: 8px;
+        }
+      }
+    }
+
+    .schema-selection {
+      .selected-schemas {
+        margin-top: 10px;
+      }
+
+      .selected-schema {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: #e3f2fd;
+        border: 1px solid #2196f3;
+        border-radius: 4px;
+        margin-bottom: 5px;
+
+        button {
+          background: #f44336;
+          color: white;
+          border: none;
+          padding: 4px 8px;
+          border-radius: 3px;
+          cursor: pointer;
+          font-size: 12px;
+
+          &:hover {
+            background: #d32f2f;
+          }
+        }
+      }
+    }
+
+    small {
+      color: #666;
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+
+    .btn-primary {
+      background: #2196f3;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+
+      &:hover {
+        background: #1976d2;
+      }
+    }
+
+    .btn-danger {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+
+      &:hover {
+        background: #d32f2f;
+      }
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .required {
+      color: #d32f2f;
+      font-weight: bold;
+    }
+
   }
 
   .modal-ux-header {
