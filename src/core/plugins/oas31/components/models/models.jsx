@@ -429,9 +429,8 @@ const Models = ({
                         type="text" 
                         value={schemaName} 
                         onChange={(e) => setSchemaName(e.target.value)}
-                        placeholder="e.g., UserCreateRequest"
+                        placeholder="UserCreateRequest"
                       />
-                      <small>The unique key used to reference this schema in your API</small>
                       {validationErrors.schemaName && (
                         <div className="form-error">{validationErrors.schemaName}</div>
                       )}
@@ -445,7 +444,6 @@ const Models = ({
                         type="text" 
                         value={schemaData.description} 
                         onChange={(e) => setSchemaData({...schemaData, description: e.target.value})}
-                        placeholder="A human-readable explanation of what the schema represents"
                       />
                     </div>
                     
@@ -462,7 +460,6 @@ const Models = ({
                         <option value="array">Array</option>
                         <option value="enum">Enum</option>
                       </select>
-                      <small>The fundamental data type. This will dynamically show/hide other relevant fields.</small>
                     </div>
                   </div>
 
@@ -542,7 +539,6 @@ const Models = ({
                   {schemaData.type === "object" && !schemaData.useComposition && (
                     <div className="form-section">
                       <h4>Properties</h4>
-                      <p>Define the properties of this object schema.</p>
                       
                       {schemaData.properties.map((property, index) => (
                         <div key={index} className="property-row">
@@ -711,7 +707,6 @@ const Models = ({
                   {schemaData.type === "array" && !schemaData.useComposition && (
                     <div className="form-section">
                       <h4>Array Items</h4>
-                      <p>Define what type of items this array contains.</p>
                       
                       <div className="form-field">
                         <label className="form-label">Items Type <span className="required">*</span></label>
@@ -740,7 +735,6 @@ const Models = ({
                   {schemaData.type === "enum" && !schemaData.useComposition && (
                     <div className="form-section">
                       <h4>Enum Values</h4>
-                      <p>Define the allowed values for this enum schema.</p>
                       
                       {schemaData.enum.map((enumItem, index) => (
                         <div key={index} className="enum-value-row" style={{ 
