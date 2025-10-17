@@ -22,6 +22,7 @@ const Models = ({
   const isOpen = layoutSelectors.isShown(schemasPath, isOpenDefault)
   const [showDialog, setShowDialog] = useState(false)
   const [schemaName, setSchemaName] = useState("")
+  const [schemaMode, setSchemaMode] = useState("BUILD") // "BUILD" or "COMPOSITE"
   const [schemaData, setSchemaData] = useState({
     type: "object",
     title: "",
@@ -58,7 +59,6 @@ const Models = ({
     writeOnly: false,
     deprecated: false,
     nullable: false,
-    useComposition: false,
     compositionType: "anyOf",
     compositionSchemas: []
   })
@@ -120,6 +120,7 @@ const Models = ({
   const openDialog = useCallback(() => {
     setShowDialog(true)
     setSchemaName("")
+    setSchemaMode("BUILD")
     setSchemaData({
       type: "object",
       title: "",
@@ -156,7 +157,6 @@ const Models = ({
       writeOnly: false,
       deprecated: false,
       nullable: false,
-      useComposition: false,
       compositionType: "anyOf",
       compositionSchemas: []
     })
@@ -204,15 +204,22 @@ const Models = ({
     }
     
     // Validate enum schemas
-    if (schemaData.type === "enum") {
+    if (schemaData.type === "enum" && schemaMode === "BUILD") {
       if (!schemaData.enum || schemaData.enum.length === 0) {
         errors.enum = "Enum schema must have at least one value"
       }
     }
     
+    // Validate composition schemas
+    if (schemaMode === "COMPOSITE") {
+      if (!schemaData.compositionSchemas || schemaData.compositionSchemas.length === 0) {
+        errors.compositionSchemas = "At least one schema must be selected for composition"
+      }
+    }
+    
     setValidationErrors(errors)
     return Object.keys(errors).length === 0
-  }, [schemaName, schemaData, schemas])
+  }, [schemaName, schemaData, schemas, schemaMode])
   
   const handleAddSchema = useCallback(() => {
     if (!validateForm()) {
@@ -240,7 +247,7 @@ const Models = ({
       if (schemaData.example) schema.example = schemaData.example
       
       // Handle composition types
-      if (schemaData.useComposition) {
+      if (schemaMode === "COMPOSITE") {
         if (schemaData.compositionSchemas.length > 0) {
           const refs = schemaData.compositionSchemas.map(schemaName => ({
             $ref: `#/components/schemas/${schemaName}`
@@ -448,97 +455,154 @@ const Models = ({
                         />
                       </div>
                     </div>
-                    
-                    <div className="form-field">
-                      <label className="form-label" htmlFor="schema-type">Schema Type</label>
-                      <select 
-                        className="form-input" 
-                        id="schema-type" 
-                        value={schemaData.type} 
-                        onChange={(e) => setSchemaData({...schemaData, type: e.target.value})}
-                        disabled={schemaData.useComposition}
+                  </div>
+
+                  {/* Mode Switcher */}
+                  <div className="form-section">
+                    <h4>Schema Mode</h4>
+                    <div className="mode-switcher" style={{ 
+                      display: 'flex', 
+                      marginBottom: '20px',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <button 
+                        type="button"
+                        className="btn tab-switcher-btn"
+                        onClick={() => setSchemaMode("BUILD")}
+                        style={{ 
+                          flex: 1,
+                          backgroundColor: schemaMode === "BUILD" ? 'rgba(0, 0, 0, .051)' : '#ffffff',
+                          color: schemaMode === "BUILD" ? '#000000' : '#6c757d',
+                          border: 'none',
+                          borderRadius: 0,
+                          borderRight: '1px solid #dee2e6',
+                          margin: 0,
+                          transition: 'box-shadow 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (schemaMode !== "BUILD") {
+                            e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.boxShadow = 'none'
+                        }}
                       >
-                        <option value="object">Object</option>
-                        <option value="array">Array</option>
-                        <option value="enum">Enum</option>
-                      </select>
+                        BUILD
+                      </button>
+                      <button 
+                        type="button"
+                        className="btn tab-switcher-btn"
+                        onClick={() => setSchemaMode("COMPOSITE")}
+                        style={{ 
+                          flex: 1,
+                          backgroundColor: schemaMode === "COMPOSITE" ? 'rgba(0, 0, 0, .051)' : '#ffffff',
+                          color: schemaMode === "COMPOSITE" ? '#000000' : '#6c757d',
+                          border: 'none',
+                          borderRadius: 0,
+                          margin: 0,
+                          transition: 'box-shadow 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (schemaMode !== "COMPOSITE") {
+                            e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.boxShadow = 'none'
+                        }}
+                      >
+                        COMPOSITE
+                      </button>
                     </div>
                   </div>
 
-                  {/* Composition Types */}
-                  <div className="form-section">
-                    <h4>Composition (Advanced)</h4>
-                    <div className="form-field">
-                      <label>
-                        <input 
-                          type="checkbox" 
-                          checked={schemaData.useComposition} 
-                          onChange={(e) => setSchemaData({...schemaData, useComposition: e.target.checked})}
-                        />
-                        Use Composition Types (anyOf, oneOf, allOf)
-                      </label>
+                  {/* BUILD Mode Content */}
+                  {schemaMode === "BUILD" && (
+                    <div className="form-section">
+                      <h4>Schema Type</h4>
+                      <div className="form-field">
+                        <label className="form-label" htmlFor="schema-type">Schema Type</label>
+                        <select 
+                          className="form-input" 
+                          id="schema-type" 
+                          value={schemaData.type} 
+                          onChange={(e) => setSchemaData({...schemaData, type: e.target.value})}
+                        >
+                          <option value="object">Object</option>
+                          <option value="array">Array</option>
+                          <option value="enum">Enum</option>
+                        </select>
+                      </div>
                     </div>
-                    
-                    {schemaData.useComposition && (
-                      <>
-                        <div className="form-field">
-                          <label className="form-label" htmlFor="composition-type">Composition Type</label>
+                  )}
+
+                  {/* COMPOSITE Mode Content */}
+                  {schemaMode === "COMPOSITE" && (
+                    <div className="form-section">
+                      <h4>Composition</h4>
+                      <div className="form-field">
+                        <label className="form-label" htmlFor="composition-type">Composition Type</label>
+                        <select 
+                          className="form-input" 
+                          id="composition-type" 
+                          value={schemaData.compositionType} 
+                          onChange={(e) => setSchemaData({...schemaData, compositionType: e.target.value})}
+                        >
+                          <option value="anyOf">anyOf (Union - any can match)</option>
+                          <option value="oneOf">oneOf (Exclusive Union - exactly one must match)</option>
+                          <option value="allOf">allOf (Intersection - all must match)</option>
+                        </select>
+                      </div>
+                      
+                      <div className="form-field">
+                        <label className="form-label">Member Schemas</label>
+                        <div className="schema-selection">
                           <select 
                             className="form-input" 
-                            id="composition-type" 
-                            value={schemaData.compositionType} 
-                            onChange={(e) => setSchemaData({...schemaData, compositionType: e.target.value})}
+                            onChange={(e) => {
+                              if (e.target.value && !schemaData.compositionSchemas.includes(e.target.value)) {
+                                setSchemaData({
+                                  ...schemaData, 
+                                  compositionSchemas: [...schemaData.compositionSchemas, e.target.value]
+                                })
+                              }
+                              e.target.value = ""
+                            }}
                           >
-                            <option value="anyOf">anyOf (Union - any can match)</option>
-                            <option value="oneOf">oneOf (Exclusive Union - exactly one must match)</option>
-                            <option value="allOf">allOf (Intersection - all must match)</option>
+                            <option value="">Select existing schema...</option>
+                            {Object.keys(schemas).map(schemaKey => (
+                              <option key={schemaKey} value={schemaKey}>{schemaKey}</option>
+                            ))}
                           </select>
-                        </div>
-                        
-                        <div className="form-field">
-                          <label className="form-label">Member Schemas</label>
-                          <div className="schema-selection">
-                            <select 
-                              className="form-input" 
-                              onChange={(e) => {
-                                if (e.target.value && !schemaData.compositionSchemas.includes(e.target.value)) {
-                                  setSchemaData({
+                          <div className="selected-schemas">
+                            {schemaData.compositionSchemas.map((schema, index) => (
+                              <div key={index} className="selected-schema">
+                                {schema}
+                                <button 
+                                  type="button" 
+                                  onClick={() => setSchemaData({
                                     ...schemaData, 
-                                    compositionSchemas: [...schemaData.compositionSchemas, e.target.value]
-                                  })
-                                }
-                                e.target.value = ""
-                              }}
-                            >
-                              <option value="">Select existing schema...</option>
-                              {Object.keys(schemas).map(schemaKey => (
-                                <option key={schemaKey} value={schemaKey}>{schemaKey}</option>
-                              ))}
-                            </select>
-                            <div className="selected-schemas">
-                              {schemaData.compositionSchemas.map((schema, index) => (
-                                <div key={index} className="selected-schema">
-                                  {schema}
-                                  <button 
-                                    type="button" 
-                                    onClick={() => setSchemaData({
-                                      ...schemaData, 
-                                      compositionSchemas: schemaData.compositionSchemas.filter((_, i) => i !== index)
-                                    })}
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
+                                    compositionSchemas: schemaData.compositionSchemas.filter((_, i) => i !== index)
+                                  })}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      </>
-                    )}
-                  </div>
+                        {validationErrors.compositionSchemas && (
+                          <div className="form-error">{validationErrors.compositionSchemas}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Section 2: Properties (for object type) */}
-                  {schemaData.type === "object" && !schemaData.useComposition && (
+                  {schemaData.type === "object" && schemaMode === "BUILD" && (
                     <div className="form-section">
                       <h4>Properties</h4>
                       
@@ -706,7 +770,7 @@ const Models = ({
                   )}
 
                   {/* Section 3: Array Items (for array type) */}
-                  {schemaData.type === "array" && !schemaData.useComposition && (
+                  {schemaData.type === "array" && schemaMode === "BUILD" && (
                     <div className="form-section">
                       <h4>Array Items</h4>
                       
@@ -734,7 +798,7 @@ const Models = ({
                   )}
 
                   {/* Section 4: Enum Values (for enum type) */}
-                  {schemaData.type === "enum" && !schemaData.useComposition && (
+                  {schemaData.type === "enum" && schemaMode === "BUILD" && (
                     <div className="form-section">
                       <h4>Enum Values</h4>
                       
