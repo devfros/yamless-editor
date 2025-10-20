@@ -157,7 +157,7 @@ const JSONSchema = forwardRef(
                       />
                     ))}
                 </div>
-                {onDelete && (
+                {onDelete && isExpanded && (
                   <button 
                     className="btn btn-danger btn-sm" 
                     title="Delete Schema"

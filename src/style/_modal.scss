@@ -188,16 +188,30 @@
       }
     }
 
-    .btn-danger {
-      background: #f44336;
-      color: white;
-      border: none;
+    .btn.btn-danger {
+      background: #f44336 !important;
+      color: white !important;
+      border: none !important;
       padding: 6px 12px;
       border-radius: 4px;
       cursor: pointer;
 
       &:hover {
-        background: #d32f2f;
+        background: #d32f2f !important;
+      }
+    }
+
+    // More specific selector for delete schema dialog
+    .delete-schema-dialog .btn.btn-danger {
+      background: #f44336 !important;
+      color: white !important;
+      border: none !important;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+
+      &:hover {
+        background: #d32f2f !important;
       }
     }
 

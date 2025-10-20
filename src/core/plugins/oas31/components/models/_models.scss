@@ -83,3 +83,18 @@
   font-size: 14px;
   color: #e65100;
 }
+
+// Delete button in JSONSchema202012 component
+.models .json-schema-2020-12 .btn.btn-danger {
+  background: #f44336 !important;
+  color: white !important;
+  border: none !important;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+
+  &:hover {
+    background: #d32f2f !important;
+  }
+}
