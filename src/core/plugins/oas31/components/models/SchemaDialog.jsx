@@ -755,6 +755,36 @@ const SchemaDialog = ({
                       </div>
                     </div>
                     
+                    {currentProperty.type === "array" && (
+                      <div className="form-field" style={{ marginBottom: '12px' }}>
+                        <label className="form-label">Items Type <span className="required">*</span></label>
+                        <SearchableSelect
+                          value={currentProperty.itemsType}
+                          onChange={(value) => setCurrentProperty({...currentProperty, itemsType: value})}
+                          placeholder="Select items type..."
+                          searchValue={propertyItemsTypeSearch}
+                          onSearchChange={setPropertyItemsTypeSearch}
+                          isOpen={propertyItemsDropdownOpen}
+                          onToggle={setPropertyItemsDropdownOpen}
+                          displayValue={currentProperty.itemsType.startsWith('#/components/schemas/') 
+                            ? currentProperty.itemsType.replace('#/components/schemas/', '') 
+                            : currentProperty.itemsType}
+                          primitiveOptions={[
+                            { value: "string", label: "String" },
+                            { value: "number", label: "Number" },
+                            { value: "integer", label: "Integer" },
+                            { value: "boolean", label: "Boolean" },
+                            { value: "object", label: "Object" },
+                            { value: "array", label: "Array" }
+                          ]}
+                          options={filterSchemas(propertyItemsTypeSearch).map(schemaKey => ({
+                            value: `#/components/schemas/${schemaKey}`,
+                            label: schemaKey
+                          }))}
+                        />
+                      </div>
+                    )}
+                    
                     <div style={{ display: 'flex', gap: '15px', marginBottom: '12px' }}>
                       <div className="form-field" style={{ flex: 1 }}>
                         <label className="form-label">Format</label>
@@ -799,36 +829,6 @@ const SchemaDialog = ({
                         />
                       </div>
                     </div>
-                    
-                    {currentProperty.type === "array" && (
-                      <div className="form-field" style={{ marginBottom: '12px' }}>
-                        <label className="form-label">Items Type <span className="required">*</span></label>
-                        <SearchableSelect
-                          value={currentProperty.itemsType}
-                          onChange={(value) => setCurrentProperty({...currentProperty, itemsType: value})}
-                          placeholder="Select items type..."
-                          searchValue={propertyItemsTypeSearch}
-                          onSearchChange={setPropertyItemsTypeSearch}
-                          isOpen={propertyItemsDropdownOpen}
-                          onToggle={setPropertyItemsDropdownOpen}
-                          displayValue={currentProperty.itemsType.startsWith('#/components/schemas/') 
-                            ? currentProperty.itemsType.replace('#/components/schemas/', '') 
-                            : currentProperty.itemsType}
-                          primitiveOptions={[
-                            { value: "string", label: "String" },
-                            { value: "number", label: "Number" },
-                            { value: "integer", label: "Integer" },
-                            { value: "boolean", label: "Boolean" },
-                            { value: "object", label: "Object" },
-                            { value: "array", label: "Array" }
-                          ]}
-                          options={filterSchemas(propertyItemsTypeSearch).map(schemaKey => ({
-                            value: `#/components/schemas/${schemaKey}`,
-                            label: schemaKey
-                          }))}
-                        />
-                      </div>
-                    )}
                     
                     <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '12px' }}>
                       <label style={checkboxLabelStyle}>
