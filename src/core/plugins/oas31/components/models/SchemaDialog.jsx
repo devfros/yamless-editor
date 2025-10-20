@@ -90,9 +90,18 @@ const SchemaDialog = ({
   // Helper function to filter schemas based on search input
   const filterSchemas = useCallback((searchTerm) => {
     if (!searchTerm.trim()) return Object.keys(schemas)
-    return Object.keys(schemas).filter(key => 
-      key.toLowerCase().includes(searchTerm.toLowerCase())
+    const lowerSearch = searchTerm.toLowerCase()
+    const schemaKeys = Object.keys(schemas)
+    
+    const startsWith = schemaKeys.filter(key => 
+      key.toLowerCase().startsWith(lowerSearch)
     )
+    const includes = schemaKeys.filter(key => 
+      key.toLowerCase().includes(lowerSearch) && 
+      !key.toLowerCase().startsWith(lowerSearch)
+    )
+    
+    return [...startsWith, ...includes]
   }, [schemas])
 
   // Custom SearchableSelect component
@@ -131,9 +140,17 @@ const SchemaDialog = ({
     
     // Combine all options and filter them
     const allOptions = [...primitiveOptions, ...options]
-    const filteredOptions = allOptions.filter(option => 
-      option.label.toLowerCase().includes(searchValue.toLowerCase())
+    const lowerSearch = searchValue.toLowerCase()
+
+    const startsWithMatches = allOptions.filter(option => 
+      option.label.toLowerCase().startsWith(lowerSearch)
     )
+    const includesMatches = allOptions.filter(option => 
+      option.label.toLowerCase().includes(lowerSearch) &&
+      !option.label.toLowerCase().startsWith(lowerSearch)
+    )
+
+    const filteredOptions = [...startsWithMatches, ...includesMatches]
     
     return (
       <div ref={dropdownRef} style={{ position: 'relative', width: '100%' }}>
@@ -653,7 +670,9 @@ const SchemaDialog = ({
                           <div className="property-info">
                             <strong>{property.name}</strong>
                             <span style={{ margin: '0 10px', color: '#666' }}>
-                              ({property.type}
+                              ({property.type.startsWith('#/components/schemas/') 
+                                ? property.type.replace('#/components/schemas/', '') 
+                                : property.type}
                               {property.format && `, ${property.format}`}
                               {property.required && ', required'})
                             </span>
