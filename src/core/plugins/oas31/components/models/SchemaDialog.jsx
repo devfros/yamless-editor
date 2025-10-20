@@ -606,6 +606,22 @@ const SchemaDialog = ({
                   <div className="form-field">
                     <label className="form-label">Member Schemas</label>
                     <div className="schema-selection">
+                      <div className="selected-schemas">
+                        {schemaData.compositionSchemas.map((schema, index) => (
+                          <div key={index} className="selected-schema">
+                            {schema}
+                            <button 
+                              type="button" 
+                              onClick={() => setSchemaData({
+                                ...schemaData, 
+                                compositionSchemas: schemaData.compositionSchemas.filter((_, i) => i !== index)
+                              })}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                       <SearchableSelect
                         value=""
                         onChange={(value) => {
@@ -627,22 +643,6 @@ const SchemaDialog = ({
                           label: schemaKey
                         }))}
                       />
-                      <div className="selected-schemas">
-                        {schemaData.compositionSchemas.map((schema, index) => (
-                          <div key={index} className="selected-schema">
-                            {schema}
-                            <button 
-                              type="button" 
-                              onClick={() => setSchemaData({
-                                ...schemaData, 
-                                compositionSchemas: schemaData.compositionSchemas.filter((_, i) => i !== index)
-                              })}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
                     </div>
                     {validationErrors.compositionSchemas && (
                       <div className="form-error">{validationErrors.compositionSchemas}</div>
