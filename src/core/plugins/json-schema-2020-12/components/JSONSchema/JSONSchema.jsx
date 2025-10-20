@@ -29,6 +29,7 @@ const JSONSchema = forwardRef(
       name = "",
       dependentRequired = [],
       onExpand = () => {},
+      onDelete,
       identifier = "",
     },
     ref
@@ -129,31 +130,48 @@ const JSONSchema = forwardRef(
                 "json-schema-2020-12--circular": isCircular,
               })}
             >
-              <div className="json-schema-2020-12-head">
-                {isExpandable && !isCircular ? (
-                  <>
-                    <Accordion expanded={isExpanded} onChange={handleExpansion}>
-                      <KeywordTitle title={name} schema={schema} />
-                    </Accordion>
-                    <ExpandDeepButton
-                      expanded={isExpanded}
-                      onClick={handleExpansionDeep}
-                    />
-                  </>
-                ) : (
-                  <KeywordTitle title={name} schema={schema} />
+              <div className="json-schema-2020-12-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {isExpandable && !isCircular ? (
+                    <>
+                      <Accordion expanded={isExpanded} onChange={handleExpansion}>
+                        <KeywordTitle title={name} schema={schema} />
+                      </Accordion>
+                      <ExpandDeepButton
+                        expanded={isExpanded}
+                        onClick={handleExpansionDeep}
+                      />
+                    </>
+                  ) : (
+                    <KeywordTitle title={name} schema={schema} />
+                  )}
+                  <KeywordDeprecated schema={schema} />
+                  <KeywordReadOnly schema={schema} />
+                  <KeywordWriteOnly schema={schema} />
+                  <KeywordType schema={schema} isCircular={isCircular} />
+                  {constraints.length > 0 &&
+                    constraints.map((constraint) => (
+                      <KeywordConstraint
+                        key={`${constraint.scope}-${constraint.value}`}
+                        constraint={constraint}
+                      />
+                    ))}
+                </div>
+                {onDelete && (
+                  <button 
+                    className="btn btn-danger btn-sm" 
+                    title="Delete Schema"
+                    onClick={onDelete}
+                    style={{
+                      fontSize: '12px',
+                      padding: '4px 8px',
+                      flexShrink: 0,
+                      marginRight: '8px'
+                    }}
+                  >
+                    Delete
+                  </button>
                 )}
-                <KeywordDeprecated schema={schema} />
-                <KeywordReadOnly schema={schema} />
-                <KeywordWriteOnly schema={schema} />
-                <KeywordType schema={schema} isCircular={isCircular} />
-                {constraints.length > 0 &&
-                  constraints.map((constraint) => (
-                    <KeywordConstraint
-                      key={`${constraint.scope}-${constraint.value}`}
-                      constraint={constraint}
-                    />
-                  ))}
               </div>
               <div
                 className={classNames("json-schema-2020-12-body", {
@@ -221,6 +239,7 @@ JSONSchema.propTypes = {
   schema: propTypes.schema.isRequired,
   dependentRequired: PropTypes.arrayOf(PropTypes.string),
   onExpand: PropTypes.func,
+  onDelete: PropTypes.func,
   identifier: PropTypes.string,
 }
 

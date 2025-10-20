@@ -82,6 +82,102 @@ const Models = ({
     setShowDialog(false)
   }, [])
 
+  /**
+   * Check if a schema is referenced anywhere in the spec
+   */
+  const checkSchemaReferences = useCallback((schemaName) => {
+    try {
+      const spec = specSelectors.specJson()
+      const js = spec && typeof spec.toJS === "function" ? spec.toJS() : {}
+      const references = []
+      const schemaRef = `#/components/schemas/${schemaName}`
+
+      // Helper function to recursively search for references
+      const searchForRefs = (obj, path = []) => {
+        if (typeof obj !== 'object' || obj === null) return
+
+        if (Array.isArray(obj)) {
+          obj.forEach((item, index) => {
+            searchForRefs(item, [...path, index])
+          })
+        } else {
+          Object.entries(obj).forEach(([key, value]) => {
+            const currentPath = [...path, key]
+            
+            // Check if this is a $ref to our schema
+            if (key === '$ref' && value === schemaRef) {
+              references.push({
+                path: currentPath.join('.'),
+                location: currentPath.slice(0, -1).join('.')
+              })
+            }
+            
+            // Recursively search nested objects
+            if (typeof value === 'object' && value !== null) {
+              searchForRefs(value, currentPath)
+            }
+          })
+        }
+      }
+
+      // Search through the entire spec
+      searchForRefs(js)
+
+      return references
+    } catch (e) {
+      console.error("Error checking schema references:", e)
+      return []
+    }
+  }, [specSelectors])
+
+  /**
+   * Handle schema deletion with dependency checking
+   */
+  const handleDeleteSchema = useCallback((schemaName) => {
+    try {
+      // Check for references first
+      const references = checkSchemaReferences(schemaName)
+      
+      if (references.length > 0) {
+        // Show error message with locations
+        const locations = references.map(ref => ref.location).join(', ')
+        alert(`Cannot delete schema "${schemaName}" because it is referenced in:\n${locations}\n\nPlease remove these references first.`)
+        return
+      }
+
+      // Show confirmation dialog
+      const confirmed = window.confirm(`Are you sure you want to delete the schema "${schemaName}"? This action cannot be undone.`)
+      
+      if (!confirmed) {
+        return
+      }
+
+      // Delete the schema
+      const spec = specSelectors.specJson()
+      const js = spec && typeof spec.toJS === "function" ? spec.toJS() : {}
+      const next = { ...js }
+      
+      // Ensure components.schemas exists
+      if (next.components && next.components.schemas) {
+        delete next.components.schemas[schemaName]
+        
+        // If no schemas left, clean up empty objects
+        if (Object.keys(next.components.schemas).length === 0) {
+          delete next.components.schemas
+          if (Object.keys(next.components).length === 0) {
+            delete next.components
+          }
+        }
+        
+        const asString = JSON.stringify(next, null, 2)
+        specActions.updateSpec(asString)
+      }
+    } catch (e) {
+      console.error("Error deleting schema:", e)
+      alert("Failed to delete schema. Please try again.")
+    }
+  }, [checkSchemaReferences, specSelectors, specActions])
+
   const handleAddSchema = useCallback((schemaName, schemaData, schemaMode) => {
     try {
       const spec = specSelectors.specJson()
@@ -268,6 +364,7 @@ const Models = ({
                 schema={schema}
                 name={name}
                 onExpand={handleJSONSchema202012Expand(schemaName)}
+                onDelete={() => handleDeleteSchema(schemaName)}
               />
             )
           })}
