@@ -25,6 +25,8 @@ const Models = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteSchemaName, setDeleteSchemaName] = useState("")
   const [deleteError, setDeleteError] = useState("")
+  const [cloneSourceName, setCloneSourceName] = useState("")
+  const [cloneInitialData, setCloneInitialData] = useState(null)
   const Collapse = getComponent("Collapse")
   const JSONSchema202012 = getComponent("JSONSchema202012")
   const ArrowUpIcon = getComponent("ArrowUpIcon")
@@ -83,7 +85,18 @@ const Models = ({
   
   const closeDialog = useCallback(() => {
     setShowDialog(false)
+    setCloneSourceName("")
+    setCloneInitialData(null)
   }, [])
+  
+  const handleCreateFrom = useCallback((schemaName) => {
+    const schema = schemas[schemaName]
+    if (schema) {
+      setCloneSourceName(schemaName)
+      setCloneInitialData(schema)
+      setShowDialog(true)
+    }
+  }, [schemas])
 
   /**
    * Check if a schema is referenced anywhere in the spec
@@ -434,6 +447,7 @@ const Models = ({
                 name={name}
                 onExpand={handleJSONSchema202012Expand(schemaName)}
                 onDelete={() => handleDeleteSchema(schemaName)}
+                onCreateFrom={() => handleCreateFrom(schemaName)}
               />
             )
           })}
@@ -445,6 +459,8 @@ const Models = ({
         onAddSchema={handleAddSchema}
         schemas={schemas}
         getComponent={getComponent}
+        initialData={cloneInitialData}
+        sourceSchemaName={cloneSourceName}
       />
       {showDeleteDialog && (
         <div className="dialog-ux">

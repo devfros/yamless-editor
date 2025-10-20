@@ -10,7 +10,9 @@ const SchemaDialog = ({
   onClose,
   onAddSchema,
   schemas,
-  getComponent
+  getComponent,
+  initialData = null,
+  sourceSchemaName = null
 }) => {
   const [schemaName, setSchemaName] = useState("")
   const [schemaMode, setSchemaMode] = useState("BUILD") // "BUILD" or "COMPOSITE"
@@ -92,6 +94,339 @@ const SchemaDialog = ({
   
   const CloseIcon = getComponent("CloseIcon")
   const Button = getComponent("Button")
+  
+  // Safe helper function to extract schema name from reference
+  const safeExtractSchemaName = useCallback((ref) => {
+    try {
+      if (!ref || typeof ref !== 'string') {
+        return ref || ''
+      }
+      // Extract schema name from the end of the reference
+      const parts = ref.split('/')
+      return parts[parts.length - 1] || ''
+    } catch (e) {
+      console.warn('Error extracting schema name from reference:', ref, e)
+      return ''
+    }
+  }, [])
+  
+  // Helper function to parse raw schema into dialog format
+  const parseSchemaToDialogFormat = useCallback((rawSchema) => {
+    try {
+      if (!rawSchema || typeof rawSchema !== 'object') {
+        return {
+          type: "object",
+          title: "",
+          description: "",
+          example: "",
+          properties: [],
+          required: [],
+          items: null,
+          itemsType: "string",
+          itemsRef: "",
+          minItems: null,
+          maxItems: null,
+          uniqueItems: false,
+          minLength: null,
+          maxLength: null,
+          pattern: "",
+          format: "",
+          minimum: null,
+          maximum: null,
+          exclusiveMinimum: false,
+          exclusiveMaximum: false,
+          multipleOf: null,
+          minProperties: null,
+          maxProperties: null,
+          enum: [],
+          const: null,
+          default: null,
+          examples: [],
+          allOf: [],
+          anyOf: [],
+          oneOf: [],
+          not: null,
+          readOnly: false,
+          writeOnly: false,
+          deprecated: false,
+          nullable: false,
+          compositionType: "anyOf",
+          compositionSchemas: []
+        }
+      }
+    
+    const parsed = {
+      type: rawSchema.type || "object",
+      title: rawSchema.title || "",
+      description: rawSchema.description || "",
+      example: rawSchema.example || "",
+      properties: [],
+      required: rawSchema.required || [],
+      items: null,
+      itemsType: "string",
+      itemsRef: "",
+      minItems: rawSchema.minItems || null,
+      maxItems: rawSchema.maxItems || null,
+      uniqueItems: rawSchema.uniqueItems || false,
+      minLength: rawSchema.minLength || null,
+      maxLength: rawSchema.maxLength || null,
+      pattern: rawSchema.pattern || "",
+      format: rawSchema.format || "",
+      minimum: rawSchema.minimum || null,
+      maximum: rawSchema.maximum || null,
+      exclusiveMinimum: rawSchema.exclusiveMinimum || false,
+      exclusiveMaximum: rawSchema.exclusiveMaximum || false,
+      multipleOf: rawSchema.multipleOf || null,
+      minProperties: rawSchema.minProperties || null,
+      maxProperties: rawSchema.maxProperties || null,
+      enum: rawSchema.enum || [],
+      const: rawSchema.const || null,
+      default: rawSchema.default || null,
+      examples: rawSchema.examples || [],
+      allOf: [],
+      anyOf: [],
+      oneOf: [],
+      not: null,
+      readOnly: rawSchema.readOnly || false,
+      writeOnly: rawSchema.writeOnly || false,
+      deprecated: rawSchema.deprecated || false,
+      nullable: rawSchema.nullable || false,
+      compositionType: "anyOf",
+      compositionSchemas: []
+    }
+    
+    // Handle composition schemas
+    if (rawSchema.anyOf || rawSchema.oneOf || rawSchema.allOf) {
+      if (rawSchema.anyOf && Array.isArray(rawSchema.anyOf)) {
+        parsed.compositionType = "anyOf"
+        parsed.anyOf = rawSchema.anyOf
+        parsed.compositionSchemas = rawSchema.anyOf
+          .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
+          .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
+          .filter(schemaName => schemaName) // Remove empty strings from invalid references
+      } else if (rawSchema.oneOf && Array.isArray(rawSchema.oneOf)) {
+        parsed.compositionType = "oneOf"
+        parsed.oneOf = rawSchema.oneOf
+        parsed.compositionSchemas = rawSchema.oneOf
+          .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
+          .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
+          .filter(schemaName => schemaName) // Remove empty strings from invalid references
+      } else if (rawSchema.allOf && Array.isArray(rawSchema.allOf)) {
+        parsed.compositionType = "allOf"
+        parsed.allOf = rawSchema.allOf
+        parsed.compositionSchemas = rawSchema.allOf
+          .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
+          .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
+          .filter(schemaName => schemaName) // Remove empty strings from invalid references
+      }
+    }
+    
+    // Handle object properties
+    if (rawSchema.properties && typeof rawSchema.properties === 'object') {
+      parsed.properties = Object.entries(rawSchema.properties).map(([propName, propSchema]) => {
+        const property = {
+          name: propName,
+          required: rawSchema.required?.includes(propName) || false,
+          description: propSchema.description || "",
+          format: propSchema.format || "",
+          itemsType: "string"
+        }
+        
+        // Check if property is a composition
+        if (propSchema.anyOf || propSchema.oneOf || propSchema.allOf) {
+          property.isComposition = true
+          if (propSchema.anyOf && Array.isArray(propSchema.anyOf)) {
+            property.compositionType = "anyOf"
+            property.anyOf = propSchema.anyOf
+            property.compositionSchemas = propSchema.anyOf
+              .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
+              .map(item => {
+                const ref = item.$ref || item.$$ref
+                const extracted = safeExtractSchemaName(ref)
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('Processing anyOf item:', item, 'ref:', ref, 'extracted:', extracted)
+                }
+                return extracted
+              })
+              .filter(schemaName => schemaName) // Remove empty strings from invalid references
+          } else if (propSchema.oneOf && Array.isArray(propSchema.oneOf)) {
+            property.compositionType = "oneOf"
+            property.oneOf = propSchema.oneOf
+            property.compositionSchemas = propSchema.oneOf
+              .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
+              .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
+              .filter(schemaName => schemaName) // Remove empty strings from invalid references
+          } else if (propSchema.allOf && Array.isArray(propSchema.allOf)) {
+            property.compositionType = "allOf"
+            property.allOf = propSchema.allOf
+            property.compositionSchemas = propSchema.allOf
+              .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
+              .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
+              .filter(schemaName => schemaName) // Remove empty strings from invalid references
+          }
+        } else {
+          // Handle direct schema reference
+          if (propSchema.$ref) {
+            property.type = propSchema.$ref
+          } else {
+            property.type = propSchema.type || "string"
+          }
+        }
+        
+        // Debug logging to help identify issues
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Parsed property:', propName, property)
+          console.log('Original propSchema:', propSchema)
+          if (propSchema.anyOf || propSchema.oneOf || propSchema.allOf) {
+            console.log('Composition detected for', propName, ':', {
+              anyOf: propSchema.anyOf,
+              oneOf: propSchema.oneOf,
+              allOf: propSchema.allOf
+            })
+            console.log('Final compositionSchemas for', propName, ':', property.compositionSchemas)
+          }
+        }
+        
+        // Handle array items
+        if (propSchema.type === "array" && propSchema.items) {
+          if (propSchema.items.$ref) {
+            property.itemsType = safeExtractSchemaName(propSchema.items.$ref)
+          } else {
+            property.itemsType = propSchema.items.type || "string"
+          }
+        }
+        
+        return property
+      })
+    }
+    
+    // Handle array items
+    if (rawSchema.type === "array" && rawSchema.items) {
+      if (rawSchema.items.$ref) {
+        parsed.itemsType = safeExtractSchemaName(rawSchema.items.$ref)
+      } else {
+        parsed.itemsType = rawSchema.items.type || "string"
+      }
+    }
+    
+      return parsed
+    } catch (error) {
+      console.error('Error parsing schema:', error)
+      // Return default schema structure on error
+      return {
+        type: "object",
+        title: "",
+        description: "",
+        example: "",
+        properties: [],
+        required: [],
+        items: null,
+        itemsType: "string",
+        itemsRef: "",
+        minItems: null,
+        maxItems: null,
+        uniqueItems: false,
+        minLength: null,
+        maxLength: null,
+        pattern: "",
+        format: "",
+        minimum: null,
+        maximum: null,
+        exclusiveMinimum: false,
+        exclusiveMaximum: false,
+        multipleOf: null,
+        minProperties: null,
+        maxProperties: null,
+        enum: [],
+        const: null,
+        default: null,
+        examples: [],
+        allOf: [],
+        anyOf: [],
+        oneOf: [],
+        not: null,
+        readOnly: false,
+        writeOnly: false,
+        deprecated: false,
+        nullable: false,
+        compositionType: "anyOf",
+        compositionSchemas: []
+      }
+    }
+  }, [])
+  
+  // Effect to populate form when initialData is provided
+  useEffect(() => {
+    if (initialData && showDialog) {
+      try {
+        const parsedData = parseSchemaToDialogFormat(initialData)
+        
+        // Debug logging
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Initial data:', initialData)
+          console.log('Parsed data:', parsedData)
+        }
+        
+        // Determine mode based on schema structure
+        const hasComposition = initialData.anyOf || initialData.oneOf || initialData.allOf
+        const mode = hasComposition ? "COMPOSITE" : "BUILD"
+        
+        setSchemaMode(mode)
+        setSchemaData(parsedData)
+        
+        // Clear schema name for new schema
+        setSchemaName("")
+        
+        // Clear validation errors
+        setValidationErrors({})
+      } catch (error) {
+        console.error('Error populating form with initial data:', error)
+        // Reset to default state on error
+        setSchemaMode("BUILD")
+        setSchemaData({
+          type: "object",
+          title: "",
+          description: "",
+          example: "",
+          properties: [],
+          required: [],
+          items: null,
+          itemsType: "string",
+          itemsRef: "",
+          minItems: null,
+          maxItems: null,
+          uniqueItems: false,
+          minLength: null,
+          maxLength: null,
+          pattern: "",
+          format: "",
+          minimum: null,
+          maximum: null,
+          exclusiveMinimum: false,
+          exclusiveMaximum: false,
+          multipleOf: null,
+          minProperties: null,
+          maxProperties: null,
+          enum: [],
+          const: null,
+          default: null,
+          examples: [],
+          allOf: [],
+          anyOf: [],
+          oneOf: [],
+          not: null,
+          readOnly: false,
+          writeOnly: false,
+          deprecated: false,
+          nullable: false,
+          compositionType: "anyOf",
+          compositionSchemas: []
+        })
+        setSchemaName("")
+        setValidationErrors({})
+      }
+    }
+  }, [initialData, showDialog, parseSchemaToDialogFormat])
   
   // Helper function to filter schemas based on search input
   const filterSchemas = useCallback((searchTerm) => {
@@ -365,7 +700,7 @@ const SchemaDialog = ({
         <div className="modal-dialog-ux">
           <div className="modal-ux-inner">
             <div className="modal-ux-header">
-              <h3>Add Schema</h3>
+              <h3>{sourceSchemaName ? `Clone Schema from ${sourceSchemaName}` : "Add Schema"}</h3>
               <button type="button" className="close-modal" onClick={closeDialog}>
                 {CloseIcon ? <CloseIcon /> : "✕"}
               </button>
@@ -577,13 +912,13 @@ const SchemaDialog = ({
                                 (() => {
                                   const compositionType = property.anyOf ? 'anyOf' : property.oneOf ? 'oneOf' : 'allOf'
                                   const schemas = property[compositionType].map(ref => 
-                                    ref.$ref.replace('#/components/schemas/', '')
+                                    safeExtractSchemaName(ref.$ref || ref.$$ref)
                                   ).join(', ')
                                   return `(${compositionType}: ${schemas}${property.required ? ', required' : ''})`
                                 })()
                               ) : (
                                 `(${property.type.startsWith('#/components/schemas/') 
-                                  ? property.type.replace('#/components/schemas/', '') 
+                                  ? safeExtractSchemaName(property.type) 
                                   : property.type}${property.format && `, ${property.format}`}${property.required && ', required'})`
                               )}
                             </span>
@@ -660,7 +995,7 @@ const SchemaDialog = ({
                           onToggle={setPropertyDropdownOpen}
                           disabled={currentProperty.isComposition}
                           displayValue={currentProperty.type.startsWith('#/components/schemas/') 
-                            ? currentProperty.type.replace('#/components/schemas/', '') 
+                            ? safeExtractSchemaName(currentProperty.type) 
                             : currentProperty.type}
                           primitiveOptions={[
                             { value: "string", label: "String" },
@@ -755,7 +1090,7 @@ const SchemaDialog = ({
                           isOpen={propertyItemsDropdownOpen}
                           onToggle={setPropertyItemsDropdownOpen}
                           displayValue={currentProperty.itemsType.startsWith('#/components/schemas/') 
-                            ? currentProperty.itemsType.replace('#/components/schemas/', '') 
+                            ? safeExtractSchemaName(currentProperty.itemsType) 
                             : currentProperty.itemsType}
                           primitiveOptions={[
                             { value: "string", label: "String" },
@@ -859,7 +1194,7 @@ const SchemaDialog = ({
                       isOpen={itemsDropdownOpen}
                       onToggle={setItemsDropdownOpen}
                       displayValue={schemaData.itemsType.startsWith('#/components/schemas/') 
-                        ? schemaData.itemsType.replace('#/components/schemas/', '') 
+                        ? safeExtractSchemaName(schemaData.itemsType) 
                         : schemaData.itemsType}
                       primitiveOptions={[
                         { value: "string", label: "String" },
@@ -1019,6 +1354,8 @@ SchemaDialog.propTypes = {
   onAddSchema: PropTypes.func.isRequired,
   schemas: PropTypes.object.isRequired,
   getComponent: PropTypes.func.isRequired,
+  initialData: PropTypes.object,
+  sourceSchemaName: PropTypes.string,
 }
 
 export default SchemaDialog
