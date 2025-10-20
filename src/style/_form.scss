@@ -70,7 +70,8 @@ input[type="email"],
 input[type="file"],
 textarea {
   min-width: 100px;
-  margin: 5px 0;
+  // Yamless
+  // margin: 5px 0;
   padding: 8px 10px;
 
   border: 1px solid $form-input-border-color;
