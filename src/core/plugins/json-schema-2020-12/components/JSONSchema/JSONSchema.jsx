@@ -30,6 +30,7 @@ const JSONSchema = forwardRef(
       dependentRequired = [],
       onExpand = () => {},
       onDelete,
+      onCreateFrom,
       identifier = "",
     },
     ref
@@ -157,20 +158,39 @@ const JSONSchema = forwardRef(
                       />
                     ))}
                 </div>
-                {onDelete && isExpanded && (
-                  <button 
-                    className="btn btn-danger btn-sm" 
-                    title="Delete Schema"
-                    onClick={onDelete}
-                    style={{
-                      fontSize: '12px',
-                      padding: '4px 8px',
-                      flexShrink: 0,
-                      marginRight: '8px'
-                    }}
-                  >
-                    Delete
-                  </button>
+                {isExpanded && (
+                  <>
+                    {onCreateFrom && (
+                      <button 
+                        className="btn btn-secondary btn-sm" 
+                        title="Create Schema from this one"
+                        onClick={onCreateFrom}
+                        style={{
+                          fontSize: '12px',
+                          padding: '4px 8px',
+                          flexShrink: 0,
+                          marginRight: '8px'
+                        }}
+                      >
+                        Create from
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button 
+                        className="btn btn-danger btn-sm" 
+                        title="Delete Schema"
+                        onClick={onDelete}
+                        style={{
+                          fontSize: '12px',
+                          padding: '4px 8px',
+                          flexShrink: 0,
+                          marginRight: '8px'
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
               <div
@@ -240,6 +260,7 @@ JSONSchema.propTypes = {
   dependentRequired: PropTypes.arrayOf(PropTypes.string),
   onExpand: PropTypes.func,
   onDelete: PropTypes.func,
+  onCreateFrom: PropTypes.func,
   identifier: PropTypes.string,
 }
 
