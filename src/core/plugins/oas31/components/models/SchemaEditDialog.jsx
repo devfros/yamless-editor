@@ -791,91 +791,6 @@ const SchemaEditDialog = ({
                 </div>
               </div>
 
-              {/* Mode Switcher - Hidden for composition schemas */}
-              {!hideModeSwitcher && (
-                <div className="form-section">
-                  <h4>Schema Mode</h4>
-                  <div className="mode-switcher" style={{ 
-                    display: 'flex', 
-                    marginBottom: '20px',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '4px',
-                    overflow: 'hidden'
-                  }}>
-                    <button 
-                      type="button"
-                      className="btn tab-switcher-btn"
-                      onClick={() => setSchemaMode("BUILD")}
-                      style={{ 
-                        flex: 1,
-                        backgroundColor: schemaMode === "BUILD" ? 'rgba(0, 0, 0, .051)' : '#ffffff',
-                        color: schemaMode === "BUILD" ? '#000000' : '#6c757d',
-                        border: 'none',
-                        borderRadius: 0,
-                        borderRight: '1px solid #dee2e6',
-                        margin: 0,
-                        transition: 'box-shadow 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (schemaMode !== "BUILD") {
-                          e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.boxShadow = 'none'
-                      }}
-                    >
-                      BUILD
-                    </button>
-                    <button 
-                      type="button"
-                      className="btn tab-switcher-btn"
-                      onClick={() => setSchemaMode("COMPOSITE")}
-                      style={{ 
-                        flex: 1,
-                        backgroundColor: schemaMode === "COMPOSITE" ? 'rgba(0, 0, 0, .051)' : '#ffffff',
-                        color: schemaMode === "COMPOSITE" ? '#000000' : '#6c757d',
-                        border: 'none',
-                        borderRadius: 0,
-                        margin: 0,
-                        transition: 'box-shadow 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (schemaMode !== "COMPOSITE") {
-                          e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.boxShadow = 'none'
-                      }}
-                    >
-                      COMPOSITE
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* BUILD Mode Content */}
-              {schemaMode === "BUILD" && (
-                <div className="form-section">
-                  <h4>Schema Type</h4>
-                  <div className="form-field">
-                    <label className="form-label" htmlFor="schema-type">Schema Type</label>
-                    <select 
-                      className="form-input" 
-                      id="schema-type" 
-                      value={currentSchemaData.type} 
-                      onChange={(e) => setCurrentSchemaData({...currentSchemaData, type: e.target.value})}
-                      disabled={isSchemaTypeLocked}
-                    >
-                      <option value="object">Object</option>
-                      <option value="array">Array</option>
-                      <option value="enum">Enum</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
               {/* COMPOSITE Mode Content */}
               {schemaMode === "COMPOSITE" && (
                 <div className="form-section">
@@ -1057,7 +972,7 @@ const SchemaEditDialog = ({
                         </div>
                         
                         <div className="form-field">
-                          <label className="form-label">Member Schemas <span className="required">*</span></label>
+                          <label className="form-label">Member Schemas/Types<span className="required">*</span></label>
                           <div className="schema-selection">
                             <div className="selected-schemas">
                               {currentProperty.compositionSchemas.map((schema, index) => (
@@ -1090,7 +1005,14 @@ const SchemaEditDialog = ({
                               onSearchChange={setCompositionSchemaSearch}
                               isOpen={compositionDropdownOpen}
                               onToggle={setCompositionDropdownOpen}
-                              primitiveOptions={[]}
+                              primitiveOptions={[
+                                { value: "string", label: "String" },
+                                { value: "number", label: "Number" },
+                                { value: "integer", label: "Integer" },
+                                { value: "boolean", label: "Boolean" },
+                                { value: "object", label: "Object" },
+                                { value: "array", label: "Array" }
+                              ]}
                               options={filterSchemas(compositionSchemaSearch).map(schemaKey => ({
                                 value: schemaKey,
                                 label: schemaKey
