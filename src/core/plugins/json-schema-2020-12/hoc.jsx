@@ -1,7 +1,7 @@
 /**
  * @prettier
  */
-import React from "react"
+import React, { useContext } from "react"
 
 import JSONSchema from "./components/JSONSchema/JSONSchema"
 import Keyword$schema from "./components/keywords/$schema"
@@ -130,16 +130,16 @@ export const withJSONSchemaContext = (Component, overrides = {}) => {
     },
     fn: {
       upperFirst,
-      getTitle: makeGetTitle(useFn),
-      getType: makeGetType(useFn),
+      getTitle: makeGetTitle(() => ({ upperFirst })),
+      getType: makeGetType(() => ({ isBooleanJSONSchema })),
       isBooleanJSONSchema,
       hasKeyword,
-      isExpandable: makeIsExpandable(useFn),
+      isExpandable: makeIsExpandable(() => ({ hasKeyword })),
       stringify,
       stringifyConstraints,
       getDependentRequired,
       getSchemaKeywords,
-      getExtensionKeywords: makeGetExtensionKeywords(useFn),
+      getExtensionKeywords: makeGetExtensionKeywords(() => ({ getSchemaKeywords })),
       ...overrides.fn,
     },
     state: { paths: {} },
