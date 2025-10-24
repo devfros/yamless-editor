@@ -997,7 +997,7 @@ const SchemaDialog = ({
                         </div>
                         
                         <div className="form-field">
-                          <label className="form-label">Member Schemas <span className="required">*</span></label>
+                          <label className="form-label">Member Schemas/Types<span className="required">*</span></label>
                           <div className="schema-selection">
                             <div className="selected-schemas">
                               {currentProperty.compositionSchemas.map((schema, index) => (
@@ -1030,7 +1030,14 @@ const SchemaDialog = ({
                               onSearchChange={setCompositionSchemaSearch}
                               isOpen={compositionDropdownOpen}
                               onToggle={setCompositionDropdownOpen}
-                              primitiveOptions={[]}
+                              primitiveOptions={[
+                                { value: "string", label: "String" },
+                                { value: "number", label: "Number" },
+                                { value: "integer", label: "Integer" },
+                                { value: "boolean", label: "Boolean" },
+                                { value: "object", label: "Object" },
+                                { value: "array", label: "Array" }
+                              ]}
                               options={filterSchemas(compositionSchemaSearch).map(schemaKey => ({
                                 value: schemaKey,
                                 label: schemaKey
