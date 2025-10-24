@@ -6,8 +6,7 @@ import PropTypes from "prop-types"
 import classNames from "classnames"
 import SchemaDialog from "./SchemaDialog"
 import SchemaEditDialog from "./SchemaEditDialog"
-
-const refPrefix = "#/components/schemas/"
+import { refPrefix } from "./schemaDialogUtils"
 
 const Models = ({
   specActions,

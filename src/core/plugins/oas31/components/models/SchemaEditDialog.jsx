@@ -5,8 +5,17 @@ import React, { useCallback, useState, useRef, useEffect } from "react"
 import PropTypes from "prop-types"
 import SearchableSelect from "./SearchableSelect"
 import PropertyCard from "./PropertyCard"
-
-const refPrefix = "#/components/schemas/"
+import { 
+  safeExtractSchemaName, 
+  parseSchemaToDialogFormat, 
+  filterSchemas, 
+  getDefaultSchemaData, 
+  getDefaultPropertyData, 
+  getDefaultEnumValueData,
+  refPrefix,
+  primitiveTypeOptions,
+  emptyPrimitiveOptions
+} from "./schemaDialogUtils"
 
 const SchemaEditDialog = ({
   showDialog,
@@ -18,62 +27,10 @@ const SchemaEditDialog = ({
   schemaData
 }) => {
   const [schemaMode, setSchemaMode] = useState("BUILD") // "BUILD" or "COMPOSITE"
-  const [currentSchemaData, setCurrentSchemaData] = useState({
-    type: "object",
-    title: "",
-    description: "",
-    example: "",
-    properties: [],
-    required: [],
-    items: null,
-    itemsType: "string",
-    itemsRef: "",
-    minItems: null,
-    maxItems: null,
-    uniqueItems: false,
-    minLength: null,
-    maxLength: null,
-    pattern: "",
-    format: "",
-    minimum: null,
-    maximum: null,
-    exclusiveMinimum: false,
-    exclusiveMaximum: false,
-    multipleOf: null,
-    minProperties: null,
-    maxProperties: null,
-    enum: [],
-    const: null,
-    default: null,
-    examples: [],
-    allOf: [],
-    anyOf: [],
-    oneOf: [],
-    not: null,
-    readOnly: false,
-    writeOnly: false,
-    deprecated: false,
-    nullable: false,
-    compositionType: "anyOf",
-    compositionSchemas: [],
-    enumType: "string",
-    enumFormat: ""
-  })
+  const [currentSchemaData, setCurrentSchemaData] = useState(getDefaultSchemaData())
   const [validationErrors, setValidationErrors] = useState({})
-  const [currentProperty, setCurrentProperty] = useState({
-    name: "",
-    type: "string",
-    required: false,
-    description: "",
-    format: "",
-    itemsType: "string",
-    isComposition: false,
-    compositionType: "anyOf",
-    compositionSchemas: []
-  })
-  const [currentEnumValue, setCurrentEnumValue] = useState({
-    value: ""
-  })
+  const [currentProperty, setCurrentProperty] = useState(getDefaultPropertyData())
+  const [currentEnumValue, setCurrentEnumValue] = useState(getDefaultEnumValueData())
   
   // Search filters for schema dropdowns
   const [propertyTypeSearch, setPropertyTypeSearch] = useState("")
@@ -91,265 +48,7 @@ const SchemaEditDialog = ({
   const [editingPropertyIndex, setEditingPropertyIndex] = useState(null)
   const [editingEnumIndex, setEditingEnumIndex] = useState(null)
   
-  // Safe helper function to extract schema name from reference
-  const safeExtractSchemaName = useCallback((ref) => {
-    try {
-      if (!ref || typeof ref !== 'string') {
-        return ref || ''
-      }
-      // Extract schema name from the end of the reference
-      const parts = ref.split('/')
-      return parts[parts.length - 1] || ''
-    } catch (e) {
-      console.warn('Error extracting schema name from reference:', ref, e)
-      return ''
-    }
-  }, [])
   
-  // Helper function to parse raw schema into dialog format
-  const parseSchemaToDialogFormat = useCallback((rawSchema) => {
-    try {
-      if (!rawSchema || typeof rawSchema !== 'object') {
-        return {
-          type: "object",
-          title: "",
-          description: "",
-          example: "",
-          properties: [],
-          required: [],
-          items: null,
-          itemsType: "string",
-          itemsRef: "",
-          minItems: null,
-          maxItems: null,
-          uniqueItems: false,
-          minLength: null,
-          maxLength: null,
-          pattern: "",
-          format: "",
-          minimum: null,
-          maximum: null,
-          exclusiveMinimum: false,
-          exclusiveMaximum: false,
-          multipleOf: null,
-          minProperties: null,
-          maxProperties: null,
-          enum: [],
-          const: null,
-          default: null,
-          examples: [],
-          allOf: [],
-          anyOf: [],
-          oneOf: [],
-          not: null,
-          readOnly: false,
-          writeOnly: false,
-          deprecated: false,
-          nullable: false,
-          compositionType: "anyOf",
-          compositionSchemas: []
-        }
-      }
-    
-    const parsed = {
-      type: rawSchema.type || "object",
-      title: rawSchema.title || "",
-      description: rawSchema.description || "",
-      example: rawSchema.example || "",
-      properties: [],
-      required: rawSchema.required || [],
-      items: null,
-      itemsType: "string",
-      itemsRef: "",
-      minItems: rawSchema.minItems || null,
-      maxItems: rawSchema.maxItems || null,
-      uniqueItems: rawSchema.uniqueItems || false,
-      minLength: rawSchema.minLength || null,
-      maxLength: rawSchema.maxLength || null,
-      pattern: rawSchema.pattern || "",
-      format: rawSchema.format || "",
-      minimum: rawSchema.minimum || null,
-      maximum: rawSchema.maximum || null,
-      exclusiveMinimum: rawSchema.exclusiveMinimum || false,
-      exclusiveMaximum: rawSchema.exclusiveMaximum || false,
-      multipleOf: rawSchema.multipleOf || null,
-      minProperties: rawSchema.minProperties || null,
-      maxProperties: rawSchema.maxProperties || null,
-      enum: rawSchema.enum || [],
-      const: rawSchema.const || null,
-      default: rawSchema.default || null,
-      examples: rawSchema.examples || [],
-      allOf: [],
-      anyOf: [],
-      oneOf: [],
-      not: null,
-      readOnly: rawSchema.readOnly || false,
-      writeOnly: rawSchema.writeOnly || false,
-      deprecated: rawSchema.deprecated || false,
-      nullable: rawSchema.nullable || false,
-      compositionType: "anyOf",
-      compositionSchemas: [],
-      enumType: "string",
-      enumFormat: ""
-    }
-    
-    // Handle composition schemas
-    if (rawSchema.anyOf || rawSchema.oneOf || rawSchema.allOf) {
-      if (rawSchema.anyOf && Array.isArray(rawSchema.anyOf)) {
-        parsed.compositionType = "anyOf"
-        parsed.anyOf = rawSchema.anyOf
-        parsed.compositionSchemas = rawSchema.anyOf
-          .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
-          .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
-          .filter(schemaName => schemaName) // Remove empty strings from invalid references
-      } else if (rawSchema.oneOf && Array.isArray(rawSchema.oneOf)) {
-        parsed.compositionType = "oneOf"
-        parsed.oneOf = rawSchema.oneOf
-        parsed.compositionSchemas = rawSchema.oneOf
-          .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
-          .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
-          .filter(schemaName => schemaName) // Remove empty strings from invalid references
-      } else if (rawSchema.allOf && Array.isArray(rawSchema.allOf)) {
-        parsed.compositionType = "allOf"
-        parsed.allOf = rawSchema.allOf
-        parsed.compositionSchemas = rawSchema.allOf
-          .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
-          .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
-          .filter(schemaName => schemaName) // Remove empty strings from invalid references
-      }
-    }
-    
-    // Handle object properties
-    if (rawSchema.properties && typeof rawSchema.properties === 'object') {
-      parsed.properties = Object.entries(rawSchema.properties).map(([propName, propSchema]) => {
-        const property = {
-          name: propName,
-          required: rawSchema.required?.includes(propName) || false,
-          description: propSchema.description || "",
-          format: propSchema.format || "",
-          itemsType: "string"
-        }
-        
-        // Check if property is a composition
-        if (propSchema.anyOf || propSchema.oneOf || propSchema.allOf) {
-          property.isComposition = true
-          if (propSchema.anyOf && Array.isArray(propSchema.anyOf)) {
-            property.compositionType = "anyOf"
-            property.anyOf = propSchema.anyOf
-            property.compositionSchemas = propSchema.anyOf
-              .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
-              .map(item => {
-                const ref = item.$ref || item.$$ref
-                const extracted = safeExtractSchemaName(ref)
-                return extracted
-              })
-              .filter(schemaName => schemaName) // Remove empty strings from invalid references
-          } else if (propSchema.oneOf && Array.isArray(propSchema.oneOf)) {
-            property.compositionType = "oneOf"
-            property.oneOf = propSchema.oneOf
-            property.compositionSchemas = propSchema.oneOf
-              .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
-              .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
-              .filter(schemaName => schemaName) // Remove empty strings from invalid references
-          } else if (propSchema.allOf && Array.isArray(propSchema.allOf)) {
-            property.compositionType = "allOf"
-            property.allOf = propSchema.allOf
-            property.compositionSchemas = propSchema.allOf
-              .filter(item => item && (item.$ref || item.$$ref) && typeof (item.$ref || item.$$ref) === 'string')
-              .map(item => safeExtractSchemaName(item.$ref || item.$$ref))
-              .filter(schemaName => schemaName) // Remove empty strings from invalid references
-          }
-        } else {
-          const ref = propSchema.$ref || propSchema.$$ref
-          // Handle direct schema reference
-          if (ref) {
-            property.type = ref
-          } else {
-            property.type = propSchema.type || "string"
-          }
-        }
-        
-        // Handle array items
-        if (propSchema.type === "array" && propSchema.items) {
-          const ref = propSchema.items.$ref || propSchema.items.$$ref
-          // Handle direct schema reference
-          if (ref) {
-            property.itemsType = ref
-          } else {
-            property.itemsType = propSchema.items.type || "string"
-          }
-        }
-        
-        return property
-      })
-    }
-    
-    // Handle array items
-    if (rawSchema.type === "array" && rawSchema.items) {
-      const ref = rawSchema.items.$ref || rawSchema.items.$$ref
-      if (ref) {
-        parsed.itemsType = `${refPrefix}${ref.split(refPrefix)[1]}`
-      } else {
-        parsed.itemsType = rawSchema.items.type || "string"
-      }
-    }
-    
-    // Handle enum schemas - detect by presence of enum array
-    if (rawSchema.enum && Array.isArray(rawSchema.enum) && rawSchema.enum.length > 0) {
-      // Set type to enum for UI purposes
-      parsed.type = "enum"
-      // Extract the actual type and format from the schema
-      parsed.enumType = rawSchema.type || "string"
-      parsed.enumFormat = rawSchema.format || ""
-    }
-    
-      return parsed
-    } catch (error) {
-      console.error('Error parsing schema:', error)
-      // Return default schema structure on error
-      return {
-        type: "object",
-        title: "",
-        description: "",
-        example: "",
-        properties: [],
-        required: [],
-        items: null,
-        itemsType: "string",
-        itemsRef: "",
-        minItems: null,
-        maxItems: null,
-        uniqueItems: false,
-        minLength: null,
-        maxLength: null,
-        pattern: "",
-        format: "",
-        minimum: null,
-        maximum: null,
-        exclusiveMinimum: false,
-        exclusiveMaximum: false,
-        multipleOf: null,
-        minProperties: null,
-        maxProperties: null,
-        enum: [],
-        const: null,
-        default: null,
-        examples: [],
-        allOf: [],
-        anyOf: [],
-        oneOf: [],
-        not: null,
-        readOnly: false,
-        writeOnly: false,
-        deprecated: false,
-        nullable: false,
-        compositionType: "anyOf",
-        compositionSchemas: [],
-        enumType: "string",
-        enumFormat: ""
-      }
-    }
-  }, [])
   
   // Effect to populate form when schemaData is provided
   useEffect(() => {
@@ -370,125 +69,19 @@ const SchemaEditDialog = ({
         console.error('Error populating form with schema data:', error)
         // Reset to default state on error
         setSchemaMode("BUILD")
-        setCurrentSchemaData({
-          type: "object",
-          title: "",
-          description: "",
-          example: "",
-          properties: [],
-          required: [],
-          items: null,
-          itemsType: "string",
-          itemsRef: "",
-          minItems: null,
-          maxItems: null,
-          uniqueItems: false,
-          minLength: null,
-          maxLength: null,
-          pattern: "",
-          format: "",
-          minimum: null,
-          maximum: null,
-          exclusiveMinimum: false,
-          exclusiveMaximum: false,
-          multipleOf: null,
-          minProperties: null,
-          maxProperties: null,
-          enum: [],
-          const: null,
-          default: null,
-          examples: [],
-          allOf: [],
-          anyOf: [],
-          oneOf: [],
-          not: null,
-          readOnly: false,
-          writeOnly: false,
-          deprecated: false,
-          nullable: false,
-          compositionType: "anyOf",
-          compositionSchemas: []
-        })
+        setCurrentSchemaData(getDefaultSchemaData())
         setValidationErrors({})
       }
     }
   }, [schemaData, showDialog, parseSchemaToDialogFormat])
   
-  // Helper function to filter schemas based on search input
-  const filterSchemas = useCallback((searchTerm) => {
-    if (!searchTerm.trim()) return Object.keys(schemas)
-    const lowerSearch = searchTerm.toLowerCase()
-    const schemaKeys = Object.keys(schemas)
-    
-    const startsWith = schemaKeys.filter(key => 
-      key.toLowerCase().startsWith(lowerSearch)
-    )
-    const includes = schemaKeys.filter(key => 
-      key.toLowerCase().includes(lowerSearch) && 
-      !key.toLowerCase().startsWith(lowerSearch)
-    )
-    
-    return [...startsWith, ...includes]
-  }, [schemas])
 
   const resetForm = useCallback(() => {
     setSchemaMode("BUILD")
-    setCurrentSchemaData({
-      type: "object",
-      title: "",
-      description: "",
-      example: "",
-      properties: [],
-      required: [],
-      items: null,
-      itemsType: "string",
-      itemsRef: "",
-      minItems: null,
-      maxItems: null,
-      uniqueItems: false,
-      minLength: null,
-      maxLength: null,
-      pattern: "",
-      format: "",
-      minimum: null,
-      maximum: null,
-      exclusiveMinimum: false,
-      exclusiveMaximum: false,
-      multipleOf: null,
-      minProperties: null,
-      maxProperties: null,
-      enum: [],
-      const: null,
-      default: null,
-      examples: [],
-      allOf: [],
-      anyOf: [],
-      oneOf: [],
-      not: null,
-      readOnly: false,
-      writeOnly: false,
-      deprecated: false,
-      nullable: false,
-      compositionType: "anyOf",
-      compositionSchemas: [],
-      enumType: "string",
-      enumFormat: ""
-    })
+    setCurrentSchemaData(getDefaultSchemaData())
     setValidationErrors({})
-    setCurrentProperty({
-      name: "",
-      type: "string",
-      required: false,
-      description: "",
-      format: "",
-      itemsType: "string",
-      isComposition: false,
-      compositionType: "anyOf",
-      compositionSchemas: []
-    })
-    setCurrentEnumValue({
-      value: ""
-    })
+    setCurrentProperty(getDefaultPropertyData())
+    setCurrentEnumValue(getDefaultEnumValueData())
     setPropertyTypeSearch("")
     setItemsTypeSearch("")
     setCompositionSchemaSearch("")
@@ -614,17 +207,7 @@ const SchemaEditDialog = ({
     })
     
     // Reset form
-    setCurrentProperty({
-      name: "",
-      type: "string",
-      required: false,
-      description: "",
-      format: "",
-      itemsType: "string",
-      isComposition: false,
-      compositionType: "anyOf",
-      compositionSchemas: []
-    })
+    setCurrentProperty(getDefaultPropertyData())
     setEditingPropertyIndex(null)
   }, [currentProperty, currentSchemaData, editingPropertyIndex])
 
@@ -667,9 +250,7 @@ const SchemaEditDialog = ({
     })
     
     // Reset form
-    setCurrentEnumValue({
-      value: ""
-    })
+    setCurrentEnumValue(getDefaultEnumValueData())
     setEditingEnumIndex(null)
   }, [currentEnumValue, currentSchemaData, editingEnumIndex])
 
@@ -715,20 +296,8 @@ const SchemaEditDialog = ({
   }, [currentSchemaData.enum])
 
   const handleCancelEdit = useCallback(() => {
-    setCurrentProperty({
-      name: "",
-      type: "string",
-      required: false,
-      description: "",
-      format: "",
-      itemsType: "string",
-      isComposition: false,
-      compositionType: "anyOf",
-      compositionSchemas: []
-    })
-    setCurrentEnumValue({
-      value: ""
-    })
+    setCurrentProperty(getDefaultPropertyData())
+    setCurrentEnumValue(getDefaultEnumValueData())
     setEditingPropertyIndex(null)
     setEditingEnumIndex(null)
   }, [])
@@ -843,8 +412,8 @@ const SchemaEditDialog = ({
                         onSearchChange={setCompositionSchemaSearch}
                         isOpen={compositionDropdownOpen}
                         onToggle={setCompositionDropdownOpen}
-                        primitiveOptions={[]}
-                        options={filterSchemas(compositionSchemaSearch).map(schemaKey => ({
+                        primitiveOptions={emptyPrimitiveOptions}
+                        options={filterSchemas(compositionSchemaSearch, schemas).map(schemaKey => ({
                           value: schemaKey,
                           label: schemaKey
                         }))}
@@ -938,15 +507,8 @@ const SchemaEditDialog = ({
                           displayValue={currentProperty.type.includes(refPrefix) 
                             ? safeExtractSchemaName(currentProperty.type) 
                             : currentProperty.type}
-                          primitiveOptions={[
-                            { value: "string", label: "String" },
-                            { value: "number", label: "Number" },
-                            { value: "integer", label: "Integer" },
-                            { value: "boolean", label: "Boolean" },
-                            { value: "array", label: "Array" },
-                            { value: "object", label: "Object" }
-                          ]}
-                          options={filterSchemas(propertyTypeSearch).map(schemaKey => ({
+                          primitiveOptions={primitiveTypeOptions}
+                          options={filterSchemas(propertyTypeSearch, schemas).map(schemaKey => ({
                             value: `${refPrefix}${schemaKey}`,
                             label: schemaKey
                           }))}
@@ -1005,15 +567,8 @@ const SchemaEditDialog = ({
                               onSearchChange={setCompositionSchemaSearch}
                               isOpen={compositionDropdownOpen}
                               onToggle={setCompositionDropdownOpen}
-                              primitiveOptions={[
-                                { value: "string", label: "String" },
-                                { value: "number", label: "Number" },
-                                { value: "integer", label: "Integer" },
-                                { value: "boolean", label: "Boolean" },
-                                { value: "object", label: "Object" },
-                                { value: "array", label: "Array" }
-                              ]}
-                              options={filterSchemas(compositionSchemaSearch).map(schemaKey => ({
+                              primitiveOptions={primitiveTypeOptions}
+                              options={filterSchemas(compositionSchemaSearch, schemas).map(schemaKey => ({
                                 value: schemaKey,
                                 label: schemaKey
                               }))}
@@ -1042,15 +597,8 @@ const SchemaEditDialog = ({
                           displayValue={currentProperty.itemsType.includes(refPrefix) 
                             ? safeExtractSchemaName(currentProperty.itemsType) 
                             : currentProperty.itemsType}
-                          primitiveOptions={[
-                            { value: "string", label: "String" },
-                            { value: "number", label: "Number" },
-                            { value: "integer", label: "Integer" },
-                            { value: "boolean", label: "Boolean" },
-                            { value: "object", label: "Object" },
-                            { value: "array", label: "Array" }
-                          ]}
-                          options={filterSchemas(propertyItemsTypeSearch).map(schemaKey => ({
+                          primitiveOptions={primitiveTypeOptions}
+                          options={filterSchemas(propertyItemsTypeSearch, schemas).map(schemaKey => ({
                             value: `${refPrefix}${schemaKey}`,
                             label: schemaKey
                           }))}
@@ -1157,15 +705,8 @@ const SchemaEditDialog = ({
                       displayValue={currentSchemaData.itemsType.includes(refPrefix) 
                         ? safeExtractSchemaName(currentSchemaData.itemsType) 
                         : currentSchemaData.itemsType}
-                      primitiveOptions={[
-                        { value: "string", label: "String" },
-                        { value: "number", label: "Number" },
-                        { value: "integer", label: "Integer" },
-                        { value: "boolean", label: "Boolean" },
-                        { value: "object", label: "Object" },
-                        { value: "array", label: "Array" }
-                      ]}
-                      options={filterSchemas(itemsTypeSearch).map(schemaKey => ({
+                      primitiveOptions={primitiveTypeOptions}
+                      options={filterSchemas(itemsTypeSearch, schemas).map(schemaKey => ({
                         value: `${refPrefix}${schemaKey}`,
                         label: schemaKey
                       }))}

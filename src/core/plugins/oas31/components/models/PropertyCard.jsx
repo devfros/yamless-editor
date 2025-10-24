@@ -3,8 +3,7 @@
  */
 import React from "react"
 import PropTypes from "prop-types"
-
-const refPrefix = "#/components/schemas/"
+import { refPrefix, safeExtractSchemaName } from "./schemaDialogUtils"
 
 const PropertyCard = ({ 
   property, 
