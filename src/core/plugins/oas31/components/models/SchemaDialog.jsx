@@ -12,6 +12,7 @@ import {
   getDefaultSchemaData, 
   getDefaultPropertyData, 
   getDefaultEnumValueData,
+  createSchemaOrReference,
   refPrefix,
   primitiveTypeOptions,
   emptyPrimitiveOptions
@@ -192,9 +193,9 @@ const SchemaDialog = ({
     // Add type or composition data based on property type
     if (currentProperty.isComposition) {
       // For composition properties, add the composition keyword directly
-      newProperty[currentProperty.compositionType] = currentProperty.compositionSchemas.map(schemaName => ({
-        $ref: `${refPrefix}${schemaName}`
-      }))
+      newProperty[currentProperty.compositionType] = currentProperty.compositionSchemas.map(schemaName => 
+        createSchemaOrReference(schemaName)
+      )
     } else {
       // For regular properties, add the type
       newProperty.type = currentProperty.type

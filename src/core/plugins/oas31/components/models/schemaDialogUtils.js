@@ -40,6 +40,20 @@ export const safeExtractSchemaName = (ref) => {
   }
 }
 
+export const safeExtractRef = (ref) => {
+  try {
+    if (!ref || typeof ref !== 'string') {
+      return ref || ''
+    }
+    // Extract schema name from the end of the reference
+    const parts = ref.split(refPrefix)
+    return `${refPrefix}${parts[parts.length - 1] || 'unknown'}`
+  } catch (e) {
+    console.warn('Error extracting schema ref from reference:', ref, e)
+    return ''
+  }
+}
+
 /**
  * Helper function to parse raw schema into dialog format
  * @param {object} rawSchema - The raw schema object
@@ -171,6 +185,7 @@ export const parseSchemaToDialogFormat = (rawSchema) => {
       }
       
       // Check if property is a composition
+      // TODO: HEREERERE
       if (propSchema.anyOf || propSchema.oneOf || propSchema.allOf) {
         property.isComposition = true
         if (propSchema.anyOf && Array.isArray(propSchema.anyOf)) {
@@ -203,7 +218,7 @@ export const parseSchemaToDialogFormat = (rawSchema) => {
         const ref = propSchema.$ref || propSchema.$$ref
         // Handle direct schema reference
         if (ref) {
-          property.type = ref
+          property.type = safeExtractRef(ref)
         } else {
           property.type = propSchema.type || "string"
         }
@@ -214,7 +229,7 @@ export const parseSchemaToDialogFormat = (rawSchema) => {
         const ref = propSchema.items.$ref || propSchema.items.$$ref
         // Handle direct schema reference
         if (ref) {
-          property.itemsType = ref
+          property.itemsType = safeExtractRef(ref)
         } else {
           property.itemsType = propSchema.items.type || "string"
         }
@@ -382,3 +397,19 @@ export const getDefaultPropertyData = () => ({
 export const getDefaultEnumValueData = () => ({
   value: ""
 })
+
+/**
+ * Helper function to create appropriate schema object for composition schemas
+ * @param {string} schemaName - The schema name or primitive type
+ * @returns {object} - Schema object with type or $ref
+ */
+export const createSchemaOrReference = (schemaName) => {
+  // Check if it's a primitive type
+  const primitiveTypes = ["string", "number", "integer", "boolean", "array", "object"]
+  
+  if (primitiveTypes.includes(schemaName)) {
+    return { type: schemaName }
+  } else {
+    return { $ref: `${refPrefix}${schemaName}` }
+  }
+}
