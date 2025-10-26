@@ -265,6 +265,62 @@
     @media (max-width: 768px) {
       font-size: 12px;
     }
+
+    &.opblock-summary-method-edit {
+      background: #fff !important;
+      background-color: #fff !important;
+      // border: 1px solid #d9d9d9 !important;
+      color: #3b4151 !important;
+      text-shadow: none !important;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 6px 8px;
+      border-radius: 3px;
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b4151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 8px center !important;
+      background-size: 12px !important;
+      padding-right: 30px !important;
+      min-width: 100px;
+      
+      &:focus {
+        outline: none;
+        border-color: #49cc90 !important;
+        box-shadow: 0 0 0 2px rgba(73, 204, 144, 0.2);
+        background: #fff !important;
+        background-color: #fff !important;
+      }
+
+      &:hover {
+        background: #f8f9fa !important;
+        background-color: #f8f9fa !important;
+        border-color: #49cc90 !important;
+      }
+
+      option {
+        background: #fff;
+        background-color: #fff;
+        color: #3b4151;
+        font-weight: bold;
+        text-align: center;
+        padding: 8px 12px;
+        
+        &:hover {
+          background: #f0f8ff;
+          background-color: #f0f8ff;
+        }
+        
+        &:checked {
+          background: #e6f3ff;
+          background-color: #e6f3ff;
+          color: #0066cc;
+        }
+      }
+    }
   }
 
   .opblock-summary-path,
@@ -281,6 +337,95 @@
 
     @media (max-width: 768px) {
       font-size: 12px;
+    }
+
+    &.opblock-summary-path-edit {
+      background: #fff;
+      border: 1px solid #d9d9d9;
+      color: #3b4151;
+      font-size: 16px;
+      padding: 6px 8px;
+      border-radius: 3px;
+      font-family: monospace;
+      min-width: 200px;
+      flex: 1;
+      
+      &:focus {
+        outline: none;
+        border-color: #49cc90;
+        box-shadow: 0 0 0 2px rgba(73, 204, 144, 0.2);
+      }
+
+      &.invalid {
+        border-color: #f93e3e;
+        box-shadow: 0 0 0 2px rgba(249, 62, 62, 0.2);
+      }
+
+      &::placeholder {
+        color: #999;
+        font-style: italic;
+      }
+    }
+  }
+
+  .opblock-summary-path-edit-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .opblock-summary-path-validation-error {
+    font-size: 12px;
+    color: #f93e3e;
+    margin-top: 4px;
+    font-family: monospace;
+  }
+
+  .opblock-summary-description-edit {
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    color: #3b4151;
+    font-size: 14px;
+    padding: 6px 8px;
+    border-radius: 3px;
+    font-family: inherit;
+    min-width: 200px;
+    flex: 1;
+    height: 32px;
+    
+    &:focus {
+      outline: none;
+      border-color: #49cc90;
+      box-shadow: 0 0 0 2px rgba(73, 204, 144, 0.2);
+    }
+
+    &::placeholder {
+      color: #999;
+      font-style: italic;
+    }
+  }
+
+  .opblock-description-edit {
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    color: #3b4151;
+    font-size: 14px;
+    padding: 8px;
+    border-radius: 3px;
+    font-family: inherit;
+    width: 100%;
+    resize: vertical;
+    min-height: 80px;
+    
+    &:focus {
+      outline: none;
+      border-color: #49cc90;
+      box-shadow: 0 0 0 2px rgba(73, 204, 144, 0.2);
+    }
+
+    &::placeholder {
+      color: #999;
+      font-style: italic;
     }
   }
 
@@ -356,6 +501,43 @@
         &.copy-to-clipboard {
           width: 24px;
         }
+      }
+    }
+
+    .opblock-summary-edit-btn,
+    .opblock-summary-save-btn,
+    .opblock-summary-cancel-btn {
+      background: none;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 6px;
+      margin: 0 2px;
+      border-radius: 3px;
+      transition: all 0.2s;
+      color: #3b4151;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .opblock-summary-save-btn {
+      color: #49cc90;
+      
+      &:hover {
+        background-color: rgba(73, 204, 144, 0.1);
+        border-color: #49cc90;
+      }
+    }
+
+    .opblock-summary-cancel-btn {
+      color: #f93e3e;
+      
+      &:hover {
+        background-color: rgba(249, 62, 62, 0.1);
+        border-color: #f93e3e;
       }
     }
   }

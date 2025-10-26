@@ -26,6 +26,9 @@ export const CLEAR_RESPONSE = "spec_clear_response"
 export const CLEAR_REQUEST = "spec_clear_request"
 export const CLEAR_VALIDATE_PARAMS = "spec_clear_validate_param"
 export const UPDATE_OPERATION_META_VALUE = "spec_update_operation_meta_value"
+export const UPDATE_OPERATION_METHOD = "spec_update_operation_method"
+export const UPDATE_OPERATION_PATH = "spec_update_operation_path"
+export const UPDATE_OPERATION_FIELDS = "spec_update_operation_fields"
 export const UPDATE_RESOLVED = "spec_update_resolved"
 export const UPDATE_RESOLVED_SUBTREE = "spec_update_resolved_subtree"
 export const SET_SCHEME = "set_scheme"
@@ -513,6 +516,34 @@ export function clearResponse (path, method) {
   return {
     type: CLEAR_RESPONSE,
     payload:{ path, method }
+  }
+}
+
+export function updateOperationMethod(path, oldMethod, newMethod) {
+  return {
+    type: UPDATE_OPERATION_METHOD,
+    payload: { path, oldMethod, newMethod }
+  }
+}
+
+export function updateOperationPath(oldPath, newPath, method) {
+  return {
+    type: UPDATE_OPERATION_PATH,
+    payload: { oldPath, newPath, method }
+  }
+}
+
+export function updateOperationFields(path, method, updates) {
+  return {
+    type: UPDATE_OPERATION_FIELDS,
+    payload: { path, method, updates }
+  }
+}
+
+export function updateSpecString(specString) {
+  return {
+    type: UPDATE_SPEC,
+    payload: specString
   }
 }
 

@@ -8,6 +8,8 @@ import ImPropTypes from "react-immutable-proptypes"
 import RollingLoadSVG from "core/assets/rolling-load.svg"
 
 export default class Operation extends PureComponent {
+  
+
   static propTypes = {
     specPath: ImPropTypes.list.isRequired,
     operation: PropTypes.instanceOf(Iterable).isRequired,
@@ -31,7 +33,24 @@ export default class Operation extends PureComponent {
     oas3Selectors: PropTypes.object.isRequired,
     layoutActions: PropTypes.object.isRequired,
     layoutSelectors: PropTypes.object.isRequired,
-    fn: PropTypes.object.isRequired
+    fn: PropTypes.object.isRequired,
+    
+    // Editing props
+    isEditing: PropTypes.bool,
+    selectedSummary: PropTypes.string,
+    selectedDescription: PropTypes.string,
+    selectedMethod: PropTypes.string,
+    selectedPath: PropTypes.string,
+    onSummaryChange: PropTypes.func,
+    onDescriptionChange: PropTypes.func,
+    onMethodChange: PropTypes.func,
+    onPathChange: PropTypes.func,
+    onEditClick: PropTypes.func,
+    onSaveClick: PropTypes.func,
+    onCancelEdit: PropTypes.func,
+    showValidationDialog: PropTypes.bool,
+    validationError: PropTypes.string,
+    onCloseValidationDialog: PropTypes.func
   }
 
   static defaultProps = {
@@ -39,7 +58,22 @@ export default class Operation extends PureComponent {
     response: null,
     request: null,
     specPath: List(),
-    summary: ""
+    summary: "",
+    isEditing: false,
+    selectedSummary: null,
+    selectedDescription: null,
+    selectedMethod: null,
+    selectedPath: null,
+    onSummaryChange: null,
+    onDescriptionChange: null,
+    onMethodChange: null,
+    onPathChange: null,
+    onEditClick: null,
+    onSaveClick: null,
+    onCancelEdit: null,
+    showValidationDialog: false,
+    validationError: "",
+    onCloseValidationDialog: null
   }
 
   render() {
@@ -84,6 +118,10 @@ export default class Operation extends PureComponent {
       schemes
     } = op
 
+    // Get editing state from props
+    const { isEditing, selectedSummary, selectedDescription, selectedMethod, selectedPath, onSummaryChange, onDescriptionChange, onMethodChange, onPathChange, onSaveClick, onCancelEdit, showValidationDialog, validationError, onCloseValidationDialog } = this.props
+    
+
     const externalDocsUrl = externalDocs ? safeBuildUrl(externalDocs.url, specSelectors.url(), { selectedServer: oas3Selectors.selectedServer() }) : ""
     let operation = operationProps.getIn(["op"])
     let responses = operation.get("responses")
@@ -118,18 +156,54 @@ export default class Operation extends PureComponent {
 
     return (
         <div className={deprecated ? "opblock opblock-deprecated" : isShown ? `opblock opblock-${method} is-open` : `opblock opblock-${method}`} id={escapeDeepLinkPath(isShownKey.join("-"))} >
-          <OperationSummary operationProps={operationProps} isShown={isShown} toggleShown={toggleShown} getComponent={getComponent} authActions={authActions} authSelectors={authSelectors} specPath={specPath} />
+          <OperationSummary 
+            operationProps={operationProps}
+            isShown={isShown} 
+            toggleShown={toggleShown} 
+            getComponent={getComponent} 
+            authActions={authActions} 
+            authSelectors={authSelectors} 
+            specActions={specActions} 
+            specSelectors={specSelectors} 
+            specPath={specPath}
+            // Pass editing props directly
+            isEditing={isEditing}
+            selectedSummary={selectedSummary}
+            selectedDescription={selectedDescription}
+            selectedMethod={selectedMethod}
+            selectedPath={selectedPath}
+            onSummaryChange={onSummaryChange}
+            onDescriptionChange={onDescriptionChange}
+            onMethodChange={onMethodChange}
+            onPathChange={onPathChange}
+            onEditClick={this.props.onEditClick}
+            onSaveClick={onSaveClick}
+            onCancelEdit={onCancelEdit}
+            showValidationDialog={showValidationDialog}
+            validationError={validationError}
+            onCloseValidationDialog={onCloseValidationDialog}
+          />
           <Collapse isOpened={isShown}>
             <div className="opblock-body">
               { (operation && operation.size) || operation === null ? null :
                 <RollingLoadSVG height="32px" width="32px" className="opblock-loading-animation" />
               }
               { deprecated && <h4 className="opblock-title_normal"> Warning: Deprecated</h4>}
-              { description &&
+              { (description || isEditing) &&
                 <div className="opblock-description-wrapper">
-                  <div className="opblock-description">
-                    <Markdown source={ description } />
-                  </div>
+                  {isEditing ? (
+                    <textarea 
+                      className="opblock-description opblock-description-edit"
+                      value={selectedDescription || description || ''}
+                      onChange={(e) => onDescriptionChange && onDescriptionChange(e.target.value)}
+                      placeholder="Enter description (supports markdown)"
+                      rows="4"
+                    />
+                  ) : (
+                    <div className="opblock-description">
+                      <Markdown source={ description } />
+                    </div>
+                  )}
                 </div>
               }
               {
