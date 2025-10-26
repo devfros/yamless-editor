@@ -25,6 +25,9 @@ import {
   CLEAR_RESPONSE,
   CLEAR_REQUEST,
   CLEAR_VALIDATE_PARAMS,
+  UPDATE_OPERATION_METHOD,
+  UPDATE_OPERATION_PATH,
+  UPDATE_OPERATION_FIELDS,
   SET_SCHEME
 } from "./actions"
 
@@ -171,6 +174,152 @@ export default {
       return state.setIn( [ "scheme", "_defaultScheme" ], scheme)
     }
 
+  },
+
+  [UPDATE_OPERATION_METHOD]: (state, { payload: { path, oldMethod, newMethod } }) => {
+    // Get the operation data from the old method location
+    const operationData = state.getIn(["json", "paths", path, oldMethod])
+    const resolvedData = state.getIn(["resolved", "paths", path, oldMethod])
+    
+    if (!operationData) {
+      return state // Operation doesn't exist, do nothing
+    }
+
+    // Ensure the path object exists before setting the operation
+    let newState = state
+    const existingPath = newState.getIn(["json", "paths", path])
+    if (!existingPath) {
+      // Create the path object if it doesn't exist
+      newState = newState.setIn(["json", "paths", path], fromJSOrdered({}))
+    }
+
+    // Remove from old method and add to new method
+    newState = newState
+      .deleteIn(["json", "paths", path, oldMethod])
+      .setIn(["json", "paths", path, newMethod], operationData)
+    
+    // Also update resolved data if it exists
+    if (resolvedData) {
+      const existingResolvedPath = newState.getIn(["resolved", "paths", path])
+      if (!existingResolvedPath) {
+        // Create the resolved path object if it doesn't exist
+        newState = newState.setIn(["resolved", "paths", path], fromJSOrdered({}))
+      }
+      
+      newState = newState
+        .deleteIn(["resolved", "paths", path, oldMethod])
+        .setIn(["resolved", "paths", path, newMethod], resolvedData)
+    }
+
+    // Update the spec string to reflect the changes
+    const updatedSpec = newState.get("json").toJS()
+    const specString = JSON.stringify(updatedSpec, null, 2)
+    newState = newState.set("spec", specString)
+
+    // Invalidate the resolved subtree cache for this operation to force re-resolution
+    newState = newState.deleteIn(["resolvedSubtrees", "paths", path, oldMethod])
+    newState = newState.deleteIn(["resolvedSubtrees", "paths", path, newMethod])
+
+    return newState
+  },
+
+  [UPDATE_OPERATION_PATH]: (state, { payload: { oldPath, newPath, method } }) => {
+    // Get the operation data from the old path location
+    const operationData = state.getIn(["json", "paths", oldPath, method])
+    const resolvedData = state.getIn(["resolved", "paths", oldPath, method])
+    
+    if (!operationData) {
+      return state // Operation doesn't exist, do nothing
+    }
+
+    // Ensure the new path object exists before setting the operation
+    let newState = state
+    const existingNewPath = newState.getIn(["json", "paths", newPath])
+    if (!existingNewPath) {
+      // Create the new path object if it doesn't exist
+      newState = newState.setIn(["json", "paths", newPath], fromJSOrdered({}))
+    }
+
+    // Remove from old path and add to new path
+    newState = newState
+      .deleteIn(["json", "paths", oldPath, method])
+      .setIn(["json", "paths", newPath, method], operationData)
+    
+    // Also update resolved data if it exists
+    if (resolvedData) {
+      const existingResolvedNewPath = newState.getIn(["resolved", "paths", newPath])
+      if (!existingResolvedNewPath) {
+        // Create the resolved new path object if it doesn't exist
+        newState = newState.setIn(["resolved", "paths", newPath], fromJSOrdered({}))
+      }
+      
+      newState = newState
+        .deleteIn(["resolved", "paths", oldPath, method])
+        .setIn(["resolved", "paths", newPath, method], resolvedData)
+    }
+
+    // Update the spec string to reflect the changes
+    const updatedSpec = newState.get("json").toJS()
+    const specString = JSON.stringify(updatedSpec, null, 2)
+    newState = newState.set("spec", specString)
+
+    // Invalidate the resolved subtree cache for this operation to force re-resolution
+    newState = newState.deleteIn(["resolvedSubtrees", "paths", oldPath, method])
+    newState = newState.deleteIn(["resolvedSubtrees", "paths", newPath, method])
+
+    return newState
+  },
+
+  [UPDATE_OPERATION_FIELDS]: (state, { payload: { path, method, updates } }) => {
+    // Get the operation data from the current location
+    const operationData = state.getIn(["json", "paths", path, method])
+    const resolvedData = state.getIn(["resolved", "paths", path, method])
+    
+    if (!operationData) {
+      return state // Operation doesn't exist, do nothing
+    }
+
+    let newState = state
+
+    // Update the operation with new field values
+    if (updates.summary !== undefined) {
+      newState = newState.setIn(["json", "paths", path, method, "summary"], updates.summary)
+    }
+    if (updates.description !== undefined) {
+      newState = newState.setIn(["json", "paths", path, method, "description"], updates.description)
+    }
+    
+    // Also update resolved data if it exists
+    if (resolvedData) {
+      if (updates.summary !== undefined) {
+        newState = newState.setIn(["resolved", "paths", path, method, "summary"], updates.summary)
+      }
+      if (updates.description !== undefined) {
+        newState = newState.setIn(["resolved", "paths", path, method, "description"], updates.description)
+      }
+    }
+
+    // Update the resolvedSubtrees cache with the updated fields to avoid re-resolution loops
+    // This preserves all operation data while updating the specific fields
+    if (updates.summary !== undefined) {
+      const currentResolvedSubtree = newState.getIn(["resolvedSubtrees", "paths", path, method])
+      if (currentResolvedSubtree) {
+        newState = newState.setIn(["resolvedSubtrees", "paths", path, method, "summary"], updates.summary)
+      }
+    }
+    if (updates.description !== undefined) {
+      const currentResolvedSubtree = newState.getIn(["resolvedSubtrees", "paths", path, method])
+      if (currentResolvedSubtree) {
+        newState = newState.setIn(["resolvedSubtrees", "paths", path, method, "description"], updates.description)
+      }
+    }
+
+    // Update the spec string to reflect the changes
+    const updatedSpec = newState.get("json").toJS()
+    const specString = JSON.stringify(updatedSpec, null, 2)
+    newState = newState.set("spec", specString)
+
+    return newState
   }
 
 }

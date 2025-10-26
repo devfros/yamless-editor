@@ -3,6 +3,7 @@ import PropTypes from "prop-types"
 import ImPropTypes from "react-immutable-proptypes"
 import { opId } from "swagger-client/es/helpers"
 import { Iterable, fromJS, Map } from "immutable"
+import { validatePath, checkOperationExists } from "../utils/path-validation"
 
 export default class OperationContainer extends PureComponent {
   constructor(props, context) {
@@ -12,7 +13,14 @@ export default class OperationContainer extends PureComponent {
 
     this.state = {
       tryItOutEnabled,
-      executeInProgress: false
+      executeInProgress: false,
+      isEditing: false,
+      selectedSummary: null,
+      selectedDescription: null,
+      selectedMethod: null,
+      selectedPath: null,
+      showValidationDialog: false,
+      validationError: ""
     }
   }
 
@@ -149,6 +157,134 @@ export default class OperationContainer extends PureComponent {
     this.setState({ executeInProgress: true })
   }
 
+  handleEditClick = () => {
+    const { path, method } = this.props
+    const resolvedSubtree = this.getResolvedSubtree() || new Map()
+    
+    // Get summary and description from the resolved operation data
+    const summary = resolvedSubtree.get("summary") || ''
+    const description = resolvedSubtree.get("description") || ''
+    
+    this.setState({
+      isEditing: true,
+      selectedSummary: summary,
+      selectedDescription: description,
+      selectedMethod: method,
+      selectedPath: path
+    })
+  }
+
+  handleCancelClick = () => {
+    this.setState({
+      isEditing: false,
+      selectedSummary: null,
+      selectedDescription: null,
+      selectedMethod: null,
+      selectedPath: null
+    })
+  }
+
+  handleSummaryChange = (newSummary) => {
+    this.setState({ selectedSummary: newSummary })
+  }
+
+  handleDescriptionChange = (newDescription) => {
+    this.setState({ selectedDescription: newDescription })
+  }
+
+  handleMethodChange = (newMethod) => {
+    this.setState({ selectedMethod: newMethod })
+  }
+
+  handlePathChange = (newPath) => {
+    this.setState({ selectedPath: newPath })
+  }
+
+  showValidationDialog = (errorMessage) => {
+    this.setState({
+      showValidationDialog: true,
+      validationError: errorMessage
+    })
+  }
+
+  closeValidationDialog = () => {
+    this.setState({
+      showValidationDialog: false,
+      validationError: ""
+    })
+  }
+
+  handleSaveClick = () => {
+    const { specActions, path, method } = this.props
+    const { selectedMethod, selectedPath, selectedSummary, selectedDescription } = this.state
+
+    // Validate path if it's being changed
+    if (selectedPath && selectedPath !== path) {
+      const pathValidation = validatePath(selectedPath)
+      if (!pathValidation.isValid) {
+        this.showValidationDialog(pathValidation.error)
+        return
+      }
+    }
+
+    // Check for uniqueness conflicts
+    const finalPath = selectedPath || path
+    const finalMethod = selectedMethod || method
+    
+    // Only check for conflicts if path or method is actually changing
+    if ((finalPath !== path || finalMethod !== method) && 
+        checkOperationExists(this.props.specSelectors, finalPath, finalMethod)) {
+      this.showValidationDialog(`An operation with method '${finalMethod.toUpperCase()}' and path '${finalPath}' already exists`)
+      return
+    }
+
+    // Handle both path and method changes with correct logic
+    if (selectedPath && selectedPath !== path) {
+      // Path is changing - move the operation to the new path
+      if (selectedMethod && selectedMethod !== method) {
+        // Both path and method are changing
+        // First move to new path with old method, then change method
+        specActions.updateOperationPath(path, selectedPath, method)
+        specActions.updateOperationMethod(selectedPath, method, selectedMethod)
+      } else {
+        // Only path is changing
+        specActions.updateOperationPath(path, selectedPath, method)
+      }
+    } else if (selectedMethod && selectedMethod !== method) {
+      // Only method is changing
+      specActions.updateOperationMethod(path, method, selectedMethod)
+    }
+
+    // Get current values to compare against
+    const resolvedSubtree = this.getResolvedSubtree() || new Map()
+    const currentSummary = resolvedSubtree.get("summary") || ''
+    const currentDescription = resolvedSubtree.get("description") || ''
+    
+    // Update summary and description fields only if they actually changed
+    const updates = {}
+    if (selectedSummary !== null && selectedSummary !== currentSummary) {
+      updates.summary = selectedSummary
+    }
+    if (selectedDescription !== null && selectedDescription !== currentDescription) {
+      updates.description = selectedDescription
+    }
+    
+    // Reset editing state first
+    this.setState({
+      isEditing: false,
+      selectedSummary: null,
+      selectedDescription: null,
+      selectedMethod: null,
+      selectedPath: null
+    })
+
+    // Only call updateOperationFields if we have actual changes
+    if (Object.keys(updates).length > 0) {
+      specActions.updateOperationFields(finalPath, finalMethod, updates)
+    }
+  }
+
+
   getResolvedSubtree = () => {
     const {
       specSelectors,
@@ -214,7 +350,7 @@ export default class OperationContainer extends PureComponent {
 
     const Operation = getComponent( "operation" )
 
-    const resolvedSubtree = this.getResolvedSubtree() || Map()
+    const resolvedSubtree = this.getResolvedSubtree() || new Map()
 
     const operationProps = fromJS({
       op: resolvedSubtree,
@@ -264,6 +400,23 @@ export default class OperationContainer extends PureComponent {
         getComponent={ getComponent }
         getConfigs={ getConfigs }
         fn={fn}
+        
+        // Pass editing state from container state
+        isEditing={this.state.isEditing}
+        selectedSummary={this.state.selectedSummary}
+        selectedDescription={this.state.selectedDescription}
+        selectedMethod={this.state.selectedMethod}
+        selectedPath={this.state.selectedPath}
+        onSummaryChange={this.handleSummaryChange}
+        onDescriptionChange={this.handleDescriptionChange}
+        onMethodChange={this.handleMethodChange}
+        onPathChange={this.handlePathChange}
+        onEditClick={this.handleEditClick}
+        onSaveClick={this.handleSaveClick}
+        onCancelEdit={this.handleCancelClick}
+        showValidationDialog={this.state.showValidationDialog}
+        validationError={this.state.validationError}
+        onCloseValidationDialog={this.closeValidationDialog}
       />
     )
   }

@@ -1,8 +1,9 @@
 import React, { PureComponent } from "react"
 import PropTypes from "prop-types"
-import { Iterable, List } from "immutable"
+import { Iterable, List, Map } from "immutable"
 import ImPropTypes from "react-immutable-proptypes"
 import toString from "lodash/toString"
+import OperationValidationDialog from "./operation-validation-dialog"
 
 
 export default class OperationSummary extends PureComponent {
@@ -16,13 +17,103 @@ export default class OperationSummary extends PureComponent {
     getConfigs: PropTypes.func.isRequired,
     authActions: PropTypes.object,
     authSelectors: PropTypes.object,
+    specActions: PropTypes.object,
+    // Editing props
+    isEditing: PropTypes.bool,
+    selectedSummary: PropTypes.string,
+    selectedDescription: PropTypes.string,
+    selectedMethod: PropTypes.string,
+    selectedPath: PropTypes.string,
+    onSummaryChange: PropTypes.func,
+    onDescriptionChange: PropTypes.func,
+    onMethodChange: PropTypes.func,
+    onPathChange: PropTypes.func,
+    onEditClick: PropTypes.func,
+    onSaveClick: PropTypes.func,
+    onCancelEdit: PropTypes.func,
+    showValidationDialog: PropTypes.bool,
+    validationError: PropTypes.string,
+    onCloseValidationDialog: PropTypes.func,
   }
+
 
   static defaultProps = {
     operationProps: null,
     specPath: List(),
-    summary: ""
+    summary: "",
+    isEditing: false,
+    selectedSummary: null,
+    selectedDescription: null,
+    selectedMethod: null,
+    selectedPath: null,
+    onSummaryChange: null,
+    onDescriptionChange: null,
+    onMethodChange: null,
+    onPathChange: null,
+    onEditClick: null,
+    onSaveClick: null,
+    onCancelEdit: null,
+    showValidationDialog: false,
+    validationError: "",
+    onCloseValidationDialog: null
   }
+
+  handleEditClick = () => {
+    const { onEditClick } = this.props
+    if (onEditClick) {
+      onEditClick()
+    }
+  }
+
+  handleCancelClick = () => {
+    const { onCancelEdit } = this.props
+    if (onCancelEdit) {
+      onCancelEdit()
+    }
+  }
+
+
+  getResolvedSubtree = () => {
+    const { specSelectors, operationProps } = this.props
+    const { path, method } = operationProps.toJS()
+    return specSelectors.specResolvedSubtree(["paths", path, method])
+  }
+
+  handleSaveClick = () => {
+    const { onSaveClick } = this.props
+    if (onSaveClick) {
+      onSaveClick()
+    }
+  }
+
+  handleMethodChange = (newMethod) => {
+    const { onMethodChange } = this.props
+    if (onMethodChange) {
+      onMethodChange(newMethod)
+    }
+  }
+
+  handlePathChange = (newPath) => {
+    const { onPathChange } = this.props
+    if (onPathChange) {
+      onPathChange(newPath)
+    }
+  }
+
+  handleSummaryChange = (newSummary) => {
+    const { onSummaryChange } = this.props
+    if (onSummaryChange) {
+      onSummaryChange(newSummary)
+    }
+  }
+
+  handleDescriptionChange = (newDescription) => {
+    const { onDescriptionChange } = this.props
+    if (onDescriptionChange) {
+      onDescriptionChange(newDescription)
+    }
+  }
+
 
   render() {
 
@@ -34,6 +125,17 @@ export default class OperationSummary extends PureComponent {
       authSelectors,
       operationProps,
       specPath,
+      specSelectors,
+      isEditing,
+      selectedSummary,
+      selectedDescription,
+      selectedMethod,
+      selectedPath,
+      onSummaryChange,
+      onDescriptionChange,
+      showValidationDialog,
+      validationError,
+      onCloseValidationDialog,
     } = this.props
 
     let {
@@ -54,9 +156,15 @@ export default class OperationSummary extends PureComponent {
 
     let security = operationProps.get("security")
 
+    // Use selectedPath if available (after save), otherwise use the original path
+    const currentPath = selectedPath || path
+    
+    // Also update the method if it was changed
+    const currentMethod = selectedMethod || method
+
     const AuthorizeOperationBtn = getComponent("authorizeOperationBtn", true)
-    const OperationSummaryMethod = getComponent("OperationSummaryMethod")
-    const OperationSummaryPath = getComponent("OperationSummaryPath")
+    const OperationMethod = getComponent("OperationMethod")
+    const OperationPath = getComponent("OperationPath")
     const JumpToPath = getComponent("JumpToPath", true)
     const CopyToClipboardBtn = getComponent("CopyToClipboardBtn", true)
     const ArrowUpIcon = getComponent("ArrowUpIcon")
@@ -66,26 +174,78 @@ export default class OperationSummary extends PureComponent {
     const securityIsOptional = hasSecurity && security.size === 1 && security.first().isEmpty()
     const allowAnonymous = !hasSecurity || securityIsOptional
     return (
-      <div className={`opblock-summary opblock-summary-${method}`} >
+      <div className={`opblock-summary opblock-summary-${currentMethod}`} >
         <button
           aria-expanded={isShown}
           className="opblock-summary-control"
-          onClick={toggleShown}
+          onClick={isEditing ? undefined : toggleShown}
         >
-          <OperationSummaryMethod method={method} />
+          <OperationMethod 
+            method={isEditing ? (selectedMethod || currentMethod) : currentMethod} 
+            isEditing={isEditing}
+            onMethodChange={this.handleMethodChange}
+          />
           <div className="opblock-summary-path-description-wrapper">
-            <OperationSummaryPath getComponent={getComponent} operationProps={operationProps} specPath={specPath} />
+            <OperationPath 
+              getComponent={getComponent} 
+              operationProps={operationProps} 
+              specPath={specPath}
+              isEditing={isEditing}
+              selectedPath={selectedPath}
+              onPathChange={this.handlePathChange}
+              currentPath={currentPath}
+            />
 
             {!showSummary ? null :
-              <div className="opblock-summary-description">
-                {toString(resolvedSummary || summary)}
-              </div>
+              isEditing ? (
+                <input 
+                  className="opblock-summary-description opblock-summary-description-edit"
+                  type="text"
+                  value={selectedSummary || ''}
+                  onChange={(e) => this.handleSummaryChange(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  placeholder="Enter summary"
+                />
+              ) : (
+                <div className="opblock-summary-description">
+                  {toString(resolvedSummary || summary)}
+                </div>
+              )
             }
           </div>
 
           {displayOperationId && (originalOperationId || operationId) ? <span className="opblock-summary-operation-id">{originalOperationId || operationId}</span> : null}
         </button>
-        <CopyToClipboardBtn textToCopy={`${specPath.get(1)}`} />
+        {!isEditing && <CopyToClipboardBtn textToCopy={`${specPath.get(1)}`} />}
+        {isShown && (
+          !isEditing ? (
+            <button 
+              className="opblock-summary-edit-btn"
+              onClick={this.handleEditClick}
+              title="Edit method and path"
+            >
+              ✎
+            </button>
+          ) : (
+            <>
+              <button 
+                className="opblock-summary-save-btn"
+                onClick={this.handleSaveClick}
+                title="Save changes"
+              >
+                ✓
+              </button>
+              <button 
+                className="opblock-summary-cancel-btn"
+                onClick={this.handleCancelClick}
+                title="Cancel editing"
+              >
+                ✕
+              </button>
+            </>
+          )
+        )}
         {
           allowAnonymous ? null :
             <AuthorizeOperationBtn
@@ -98,13 +258,19 @@ export default class OperationSummary extends PureComponent {
         }
         <JumpToPath path={specPath} />{/* TODO: use wrapComponents here, swagger-ui doesn't care about jumpToPath */}
         <button
-          aria-label={`${method} ${path.replace(/\//g, "\u200b/")}`}
+          aria-label={`${currentMethod} ${currentPath.replace(/\//g, "\u200b/")}`}
           className="opblock-control-arrow"
           aria-expanded={isShown}
           tabIndex="-1"
           onClick={toggleShown}>
           {isShown ? <ArrowUpIcon className="arrow" /> : <ArrowDownIcon className="arrow" />}
         </button>
+        <OperationValidationDialog
+          isOpen={showValidationDialog}
+          errorMessage={validationError}
+          onClose={onCloseValidationDialog}
+          getComponent={getComponent}
+        />
       </div>
     )
   }

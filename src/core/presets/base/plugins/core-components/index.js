@@ -23,8 +23,8 @@ import OperationTag from "core/components/operation-tag"
 import Operation from "core/components/operation"
 import OperationContainer from "core/containers/OperationContainer"
 import OperationSummary from "core/components/operation-summary"
-import OperationSummaryMethod from "core/components/operation-summary-method"
-import OperationSummaryPath from "core/components/operation-summary-path"
+import OperationMethod from "core/components/operation-method"
+import OperationPath from "core/components/operation-path"
 import OperationExt from "core/components/operation-extensions"
 import OperationExtRow from "core/components/operation-extension-row"
 import Responses from "core/components/responses"
@@ -90,8 +90,8 @@ const CoreComponentsPlugin = () => ({
     operations: Operations,
     operation: Operation,
     OperationSummary,
-    OperationSummaryMethod,
-    OperationSummaryPath,
+    OperationMethod,
+    OperationPath,
     responses: Responses,
     response: Response,
     ResponseExtension: ResponseExtension,
