@@ -70,13 +70,31 @@ export default class ParameterEditForm extends Component {
   }
 
   handleInputChange = (field, value) => {
-    this.setState(prevState => ({
-      formData: {
+    this.setState(prevState => {
+      const newFormData = {
         ...prevState.formData,
         [field]: value
-      },
-      validationErrors: []
-    }))
+      }
+      
+      // If location changes from "query" to something else, clear schema references and complex types
+      if (field === "in" && value !== "query" && prevState.formData.in === "query") {
+        // Clear type if it's a schema reference, array, or object
+        if (isSchemaReference(newFormData.type) || 
+            newFormData.type === "array" || 
+            newFormData.type === "object") {
+          newFormData.type = ""
+        }
+        // Clear itemsType if it's a schema reference
+        if (isSchemaReference(newFormData.itemsType)) {
+          newFormData.itemsType = ""
+        }
+      }
+      
+      return {
+        formData: newFormData,
+        validationErrors: []
+      }
+    })
   }
 
   handleTypeChange = (type) => {
@@ -135,15 +153,25 @@ export default class ParameterEditForm extends Component {
     const { parameter } = this.props
     const isEditing = !!parameter
 
-    const primitiveTypeOptions = getPrimitiveTypeOptions()
+    const allPrimitiveTypeOptions = getPrimitiveTypeOptions()
     const locationOptions = getParameterLocationOptions()
+    
+    // Filter primitive types based on location - exclude array and object for non-query locations
+    const primitiveTypeOptions = formData.in === "query" 
+      ? allPrimitiveTypeOptions
+      : allPrimitiveTypeOptions.filter(option => 
+          option.value !== "array" && option.value !== "object"
+        )
     
     // Get schemas from specSelectors like the property forms do
     const schemas = this.props.specSelectors.selectSchemas()
-    const schemaOptions = filterSchemas(typeSearch, schemas).map(schemaKey => ({
-      value: `#/components/schemas/${schemaKey}`,
-      label: schemaKey
-    }))
+    // Only include schema options if location is "query"
+    const schemaOptions = formData.in === "query" 
+      ? filterSchemas(typeSearch, schemas).map(schemaKey => ({
+          value: `#/components/schemas/${schemaKey}`,
+          label: schemaKey
+        }))
+      : []
 
     return (
       <div className="parameter-edit-form">
@@ -275,10 +303,12 @@ export default class ParameterEditForm extends Component {
                   ? extractSchemaName(formData.itemsType) 
                   : formData.itemsType}
                 primitiveOptions={primitiveTypeOptions}
-                options={filterSchemas(itemsTypeSearch, schemas).map(schemaKey => ({
-                  value: `#/components/schemas/${schemaKey}`,
-                  label: schemaKey
-                }))}
+                options={formData.in === "query" 
+                  ? filterSchemas(itemsTypeSearch, schemas).map(schemaKey => ({
+                      value: `#/components/schemas/${schemaKey}`,
+                      label: schemaKey
+                    }))
+                  : []}
               />
             </div>
           )}
