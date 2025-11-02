@@ -254,14 +254,16 @@ export default class OperationContainer extends PureComponent {
   handleParameterAdd = (parameter) => {
     this.setState(prevState => {
       try {
-        // Create a clean, serializable copy of the parameter
-        const cleanParameter = fromJS(parameter)
+        // Create a clean, serializable copy of the parameter using JSON serialization
+        // This ensures no non-cloneable structures (circular refs, functions, etc.)
+        const cleanParameterObj = JSON.parse(JSON.stringify(parameter))
+        const cleanParameter = fromJS(cleanParameterObj)
         const updatedParameters = prevState.pendingParameters.push(cleanParameter)
         return {
           pendingParameters: updatedParameters,
           pendingParameterOperations: [
             ...prevState.pendingParameterOperations,
-            { type: 'add', parameter: { ...parameter } } // Store clean copy for later use
+            { type: 'add', parameter: cleanParameterObj } // Store clean, serializable copy
           ]
         }
       } catch (error) {
@@ -279,13 +281,15 @@ export default class OperationContainer extends PureComponent {
       if (paramIndex === -1) return prevState
       
       try {
-        // Create a clean, serializable copy of the parameter
-        const cleanParameter = fromJS(newParameter)
+        // Create a clean, serializable copy of the parameter using JSON serialization
+        // This ensures no non-cloneable structures (circular refs, functions, etc.)
+        const cleanParameterObj = JSON.parse(JSON.stringify(newParameter))
+        const cleanParameter = fromJS(cleanParameterObj)
         return {
           pendingParameters: prevState.pendingParameters.set(paramIndex, cleanParameter),
           pendingParameterOperations: [
             ...prevState.pendingParameterOperations,
-            { type: 'update', parameter: { ...newParameter }, oldIdentifier: { ...oldIdentifier } } // Create clean copies
+            { type: 'update', parameter: cleanParameterObj, oldIdentifier: { ...oldIdentifier } } // Store clean, serializable copy
           ]
         }
       } catch (error) {
