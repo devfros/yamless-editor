@@ -155,17 +155,19 @@ export default class Response extends React.Component {
           if (resolved) {
             // Use resolved schema for display while preserving original structure
             const resolvedJS = resolved.toJS ? resolved.toJS() : resolved
-            // Create a merged schema with resolved content but preserve $ref
+            // Create a merged schema with resolved content but preserve $ref and $$ref for XML generator compatibility
             oas3SchemaForContentType = fromJS({
               ...resolvedJS,
-              $ref: schemaRef
+              $ref: schemaRef,
+              $$ref: schemaRef
             })
           } else {
-            // If resolution fails, ensure $ref is still preserved
+            // If resolution fails, ensure $ref and $$ref are still preserved
             // Convert to plain object and back to ensure structure is correct
             oas3SchemaForContentType = fromJS({
               ...schemaObj,
-              $ref: schemaRef
+              $ref: schemaRef,
+              $$ref: schemaRef
             })
           }
         }
