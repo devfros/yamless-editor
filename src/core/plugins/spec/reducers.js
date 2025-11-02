@@ -36,6 +36,21 @@ import {
 } from "./actions"
 
 /**
+ * Create a clean, serializable copy of a parameter object
+ * @param {Object} parameter - The parameter object
+ * @returns {Object} Clean, serializable parameter object
+ */
+const cleanParameter = (parameter) => {
+  try {
+    // Use JSON serialization to ensure a completely clean, cloneable object
+    return JSON.parse(JSON.stringify(parameter))
+  } catch (error) {
+    console.warn('Failed to clean parameter, using original:', error)
+    return parameter
+  }
+}
+
+/**
  * Resolve parameter schema references to actual schema definitions
  * @param {Object} parameter - The parameter object
  * @param {Object} state - The current state
@@ -55,12 +70,43 @@ const resolveParameterSchema = (parameter, state) => {
   const schemaDefinition = state.getIn(["json", "components", "schemas", schemaName])
   
   if (schemaDefinition) {
-    // Return parameter with resolved schema AND preserve $ref
-    return {
-      ...parameter,
-      schema: {
-        $ref: schemaRef,  // Preserve the original reference
-        ...schemaDefinition.toJS()  // Spread resolved content
+    try {
+      // Convert to plain JS object and create a clean, serializable copy
+      // This ensures no non-cloneable structures (circular refs, functions, etc.)
+      const schemaJS = schemaDefinition.toJS()
+      const cleanSchemaContent = JSON.parse(JSON.stringify(schemaJS))
+      
+      // Create a clean, serializable copy of the parameter as well
+      const cleanParameter = JSON.parse(JSON.stringify(parameter))
+      
+      // Return parameter with resolved schema AND preserve $ref
+      return {
+        ...cleanParameter,
+        schema: {
+          $ref: schemaRef,  // Preserve the original reference
+          ...cleanSchemaContent  // Spread clean resolved content
+        }
+      }
+    } catch (error) {
+      // If serialization fails, return parameter with just $ref (fallback)
+      console.warn(`Failed to create clean schema copy for ${schemaName}, using $ref only:`, error)
+      try {
+        // Try to return at least a clean parameter with $ref
+        const cleanParameter = JSON.parse(JSON.stringify(parameter))
+        return {
+          ...cleanParameter,
+          schema: {
+            $ref: schemaRef
+          }
+        }
+      } catch (fallbackError) {
+        // Last resort: return original parameter with $ref only
+        return {
+          ...parameter,
+          schema: {
+            $ref: schemaRef
+          }
+        }
       }
     }
   }
@@ -369,9 +415,12 @@ export default {
 
     let newState = state
 
+    // Clean parameter before storing
+    const cleanParam = cleanParameter(parameter)
+
     // Get existing parameters array or create new one
     const existingParameters = operationData.get("parameters", List())
-    const newParameters = existingParameters.push(fromJS(parameter))
+    const newParameters = existingParameters.push(fromJS(cleanParam))
 
     // Update the operation with new parameter
     newState = newState.setIn(["json", "paths", path, method, "parameters"], newParameters)
@@ -380,14 +429,14 @@ export default {
     const resolvedData = state.getIn(["resolved", "paths", path, method])
     if (resolvedData) {
       const resolvedParameters = resolvedData.get("parameters", List())
-      const newResolvedParameters = resolvedParameters.push(fromJS(parameter))
+      const newResolvedParameters = resolvedParameters.push(fromJS(cleanParam))
       newState = newState.setIn(["resolved", "paths", path, method, "parameters"], newResolvedParameters)
     }
 
     // Update the resolvedSubtrees cache
     const currentResolvedSubtree = newState.getIn(["resolvedSubtrees", "paths", path, method])
     if (currentResolvedSubtree) {
-      const resolvedParameter = resolveParameterSchema(parameter, state)
+      const resolvedParameter = resolveParameterSchema(cleanParam, state)
       const subtreeParameters = currentResolvedSubtree.get("parameters", List())
       const newSubtreeParameters = subtreeParameters.push(fromJS(resolvedParameter))
       newState = newState.setIn(["resolvedSubtrees", "paths", path, method, "parameters"], newSubtreeParameters)
@@ -422,22 +471,25 @@ export default {
       return state // Parameter not found, do nothing
     }
 
+    // Clean parameter before storing
+    const cleanParam = cleanParameter(newParameter)
+
     // Update the parameter
-    const newParameters = existingParameters.set(parameterIndex, fromJS(newParameter))
+    const newParameters = existingParameters.set(parameterIndex, fromJS(cleanParam))
     newState = newState.setIn(["json", "paths", path, method, "parameters"], newParameters)
     
     // Also update resolved data if it exists
     const resolvedData = state.getIn(["resolved", "paths", path, method])
     if (resolvedData) {
       const resolvedParameters = resolvedData.get("parameters", List())
-      const newResolvedParameters = resolvedParameters.set(parameterIndex, fromJS(newParameter))
+      const newResolvedParameters = resolvedParameters.set(parameterIndex, fromJS(cleanParam))
       newState = newState.setIn(["resolved", "paths", path, method, "parameters"], newResolvedParameters)
     }
 
     // Update the resolvedSubtrees cache
     const currentResolvedSubtree = newState.getIn(["resolvedSubtrees", "paths", path, method])
     if (currentResolvedSubtree) {
-      const resolvedParameter = resolveParameterSchema(newParameter, state)
+      const resolvedParameter = resolveParameterSchema(cleanParam, state)
       const subtreeParameters = currentResolvedSubtree.get("parameters", List())
       const newSubtreeParameters = subtreeParameters.set(parameterIndex, fromJS(resolvedParameter))
       newState = newState.setIn(["resolvedSubtrees", "paths", path, method, "parameters"], newSubtreeParameters)
@@ -602,7 +654,9 @@ export default {
         parameterOperations.forEach(op => {
           switch (op.type) {
             case 'add':
-              existingParameters = existingParameters.push(fromJS(op.parameter))
+              // Ensure parameter is clean before converting to Immutable
+              const cleanAddParam = cleanParameter(op.parameter)
+              existingParameters = existingParameters.push(fromJS(cleanAddParam))
               break
             case 'update':
               const updateIndex = existingParameters.findIndex(param => 
@@ -610,7 +664,9 @@ export default {
                 param.get("in") === op.oldIdentifier.in
               )
               if (updateIndex !== -1) {
-                existingParameters = existingParameters.set(updateIndex, fromJS(op.parameter))
+                // Ensure parameter is clean before converting to Immutable
+                const cleanUpdateParam = cleanParameter(op.parameter)
+                existingParameters = existingParameters.set(updateIndex, fromJS(cleanUpdateParam))
               }
               break
             case 'delete':
@@ -635,7 +691,9 @@ export default {
           parameterOperations.forEach(op => {
             switch (op.type) {
               case 'add':
-                resolvedParameters = resolvedParameters.push(fromJS(op.parameter))
+                // Ensure parameter is clean before converting to Immutable
+                const cleanAddResolvedParam = cleanParameter(op.parameter)
+                resolvedParameters = resolvedParameters.push(fromJS(cleanAddResolvedParam))
                 break
               case 'update':
                 const updateIndex = resolvedParameters.findIndex(param => 
@@ -643,7 +701,9 @@ export default {
                   param.get("in") === op.oldIdentifier.in
                 )
                 if (updateIndex !== -1) {
-                  resolvedParameters = resolvedParameters.set(updateIndex, fromJS(op.parameter))
+                  // Ensure parameter is clean before converting to Immutable
+                  const cleanUpdateResolvedParam = cleanParameter(op.parameter)
+                  resolvedParameters = resolvedParameters.set(updateIndex, fromJS(cleanUpdateResolvedParam))
                 }
                 break
               case 'delete':
@@ -669,7 +729,9 @@ export default {
           parameterOperations.forEach(op => {
             switch (op.type) {
               case 'add':
-                const resolvedParameter = resolveParameterSchema(op.parameter, newState)
+                // Clean parameter before resolving schema
+                const cleanAddParamForResolve = cleanParameter(op.parameter)
+                const resolvedParameter = resolveParameterSchema(cleanAddParamForResolve, newState)
                 subtreeParameters = subtreeParameters.push(fromJS(resolvedParameter))
                 break
               case 'update':
@@ -678,7 +740,9 @@ export default {
                   param.get("in") === op.oldIdentifier.in
                 )
                 if (updateIndex !== -1) {
-                  const resolvedParameter = resolveParameterSchema(op.parameter, newState)
+                  // Clean parameter before resolving schema
+                  const cleanUpdateParamForResolve = cleanParameter(op.parameter)
+                  const resolvedParameter = resolveParameterSchema(cleanUpdateParamForResolve, newState)
                   subtreeParameters = subtreeParameters.set(updateIndex, fromJS(resolvedParameter))
                 }
                 break
