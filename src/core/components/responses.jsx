@@ -153,10 +153,6 @@ export default class Responses extends React.Component {
 
     const existingCodes = normalizedResponses ? normalizedResponses.keySeq().toArray() : []
 
-    if (!hasResponses && !isEditing) {
-      return null
-    }
-
     return (
       <div className="responses-wrapper">
         <div className="opblock-section-header">

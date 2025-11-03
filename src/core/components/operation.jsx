@@ -2,7 +2,7 @@ import React, { PureComponent } from "react"
 import PropTypes from "prop-types"
 import { getExtensions, escapeDeepLinkPath, getList } from "core/utils"
 import { safeBuildUrl, sanitizeUrl } from "core/utils/url"
-import { Iterable, List } from "immutable"
+import { Iterable, List, fromJS } from "immutable"
 import ImPropTypes from "react-immutable-proptypes"
 
 import RollingLoadSVG from "core/assets/rolling-load.svg"
@@ -149,6 +149,8 @@ export default class Operation extends PureComponent {
     const externalDocsUrl = externalDocs ? safeBuildUrl(externalDocs.url, specSelectors.url(), { selectedServer: oas3Selectors.selectedServer() }) : ""
     let operation = operationProps.getIn(["op"])
     let responses = operation.get("responses")
+    // Ensure responses is always an Iterable (empty Map if null/undefined)
+    responses = responses || fromJS({})
     let parameters = getList(operation, ["parameters"])
     let operationScheme = specSelectors.operationScheme(path, method)
     let isShownKey = ["operations", tag, operationId]
@@ -338,31 +340,29 @@ export default class Operation extends PureComponent {
 
             {executeInProgress ? <div className="loading-container"><div className="loading"></div></div> : null}
 
-              { !responses ? null :
-                  <Responses
-                    responses={ responses }
-                    request={ request }
-                    tryItOutResponse={ response }
-                    getComponent={ getComponent }
-                    getConfigs={ getConfigs }
-                    specSelectors={ specSelectors }
-                    oas3Actions={oas3Actions}
-                    oas3Selectors={oas3Selectors}
-                    specActions={ specActions }
-                    produces={specSelectors.producesOptionsFor([path, method]) }
-                    producesValue={ specSelectors.currentProducesFor([path, method]) }
-                    specPath={specPath.push("responses")}
-                    path={ path }
-                    method={ method }
-                    displayRequestDuration={ displayRequestDuration }
-                    fn={fn}
-                    isEditing={isEditing}
-                    pendingResponses={pendingResponses}
-                    onResponseAdd={onResponseAdd}
-                    onResponseUpdate={onResponseUpdate}
-                    onResponseDelete={onResponseDelete}
-                  />
-              }
+              <Responses
+                responses={ responses }
+                request={ request }
+                tryItOutResponse={ response }
+                getComponent={ getComponent }
+                getConfigs={ getConfigs }
+                specSelectors={ specSelectors }
+                oas3Actions={oas3Actions}
+                oas3Selectors={oas3Selectors}
+                specActions={ specActions }
+                produces={specSelectors.producesOptionsFor([path, method]) }
+                producesValue={ specSelectors.currentProducesFor([path, method]) }
+                specPath={specPath.push("responses")}
+                path={ path }
+                method={ method }
+                displayRequestDuration={ displayRequestDuration }
+                fn={fn}
+                isEditing={isEditing}
+                pendingResponses={pendingResponses}
+                onResponseAdd={onResponseAdd}
+                onResponseUpdate={onResponseUpdate}
+                onResponseDelete={onResponseDelete}
+              />
 
               { !showExtensions || !extensions.size ? null :
                 <OperationExt extensions={ extensions } getComponent={ getComponent } />
