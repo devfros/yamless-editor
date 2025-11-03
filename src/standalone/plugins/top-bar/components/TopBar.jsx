@@ -1,7 +1,10 @@
 import React, { cloneElement } from "react"
 import PropTypes from "prop-types"
+import { Map as ImmutableMap } from "immutable"
+import YAML, { JSON_SCHEMA } from "js-yaml"
 
 import {parseSearch, serializeSearch} from "core/utils"
+import { isOAS31 } from "core/plugins/oas31/fn"
 
 class TopBar extends React.Component {
 
@@ -13,6 +16,7 @@ class TopBar extends React.Component {
   constructor(props, context) {
     super(props, context)
     this.state = { url: props.specSelectors.url(), selectedIndex: 0 }
+    this.fileInputRef = React.createRef()
   }
 
   UNSAFE_componentWillReceiveProps(nextProps) {
@@ -85,6 +89,129 @@ class TopBar extends React.Component {
       // no-op on failure
     }
   }
+
+  handleUploadClick = () => {
+    if (this.fileInputRef.current) {
+      this.fileInputRef.current.click()
+    }
+  }
+
+  handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    // Check file extension
+    const fileName = file.name.toLowerCase()
+    const isJson = fileName.endsWith('.json')
+    const isYaml = fileName.endsWith('.yaml') || fileName.endsWith('.yml')
+
+    if (!isJson && !isYaml) {
+      const { errActions } = this.props
+      if (errActions) {
+        errActions.newSpecErr({
+          source: "upload",
+          level: "error",
+          message: "Invalid file type. Please upload a JSON or YAML file."
+        })
+      }
+      // Reset file input
+      e.target.value = ''
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const fileContent = event.target.result
+
+        // Parse the file content to validate it's valid JSON/YAML
+        let parsedJson = null
+        try {
+          parsedJson = YAML.load(fileContent, { schema: JSON_SCHEMA })
+        } catch (parseError) {
+          const { errActions } = this.props
+          if (errActions) {
+            errActions.newSpecErr({
+              source: "upload",
+              level: "error",
+              message: `Failed to parse file: ${parseError.message || "Invalid JSON or YAML format"}`
+            })
+          }
+          // Reset file input
+          e.target.value = ''
+          return
+        }
+
+        // Validate it's an object
+        if (!parsedJson || typeof parsedJson !== "object") {
+          const { errActions } = this.props
+          if (errActions) {
+            errActions.newSpecErr({
+              source: "upload",
+              level: "error",
+              message: "Invalid specification format. The file must contain a valid OpenAPI specification object."
+            })
+          }
+          // Reset file input
+          e.target.value = ''
+          return
+        }
+
+        // Convert to Immutable Map for validation
+        const jsSpec = ImmutableMap(parsedJson)
+
+        // Validate it's OAS 3.1 before updating
+        if (!isOAS31(jsSpec)) {
+          const { errActions } = this.props
+          if (errActions) {
+            errActions.newSpecErr({
+              source: "upload",
+              level: "error",
+              message: "Invalid OpenAPI version. Only OpenAPI 3.1 specifications are supported. Please ensure your spec has 'openapi: 3.1.x'."
+            })
+          }
+          // Reset file input
+          e.target.value = ''
+          return
+        }
+
+        // All validations passed - update the spec
+        this.flushAuthData()
+        this.props.specActions.updateUrl("")
+        this.props.specActions.updateSpec(fileContent)
+        this.props.specActions.updateLoadingStatus("success")
+      } catch (error) {
+        const { errActions } = this.props
+        if (errActions) {
+          errActions.newSpecErr({
+            source: "upload",
+            level: "error",
+            message: `Failed to process file: ${error.message}`
+          })
+        }
+        // Reset file input
+        e.target.value = ''
+      }
+    }
+
+    reader.onerror = () => {
+      const { errActions } = this.props
+      if (errActions) {
+        errActions.newSpecErr({
+          source: "upload",
+          level: "error",
+          message: "Failed to read file. Please try again."
+        })
+      }
+      // Reset file input
+      e.target.value = ''
+    }
+
+    reader.readAsText(file)
+  }
+
 
   onUrlSelect =(e)=> {
     let url = e.target.value || e.target.href
@@ -209,7 +336,14 @@ class TopBar extends React.Component {
             <form className="download-url-wrapper" onSubmit={formOnSubmit}>
               {control.map((el, i) => cloneElement(el, { key: i }))}
             </form>
-            <Button className="download-spec-button">Upload</Button>
+            <input
+              type="file"
+              ref={this.fileInputRef}
+              onChange={this.handleFileChange}
+              accept="application/json,.json,.yaml,.yml"
+              style={{ display: "none" }}
+            />
+            <Button className="download-spec-button" onClick={this.handleUploadClick}>Upload</Button>
             <Button className="download-spec-button" onClick={ this.downloadCurrentSpec }>Download</Button>
           </div>
         </div>
@@ -221,6 +355,7 @@ class TopBar extends React.Component {
 TopBar.propTypes = {
   specSelectors: PropTypes.object.isRequired,
   specActions: PropTypes.object.isRequired,
+  errActions: PropTypes.object,
   getComponent: PropTypes.func.isRequired,
   getConfigs: PropTypes.func.isRequired
 }
