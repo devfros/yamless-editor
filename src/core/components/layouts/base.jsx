@@ -9,6 +9,7 @@ export default class BaseLayout extends React.Component {
     errSelectors: PropTypes.object.isRequired,
     errActions: PropTypes.object.isRequired,
     specSelectors: PropTypes.object.isRequired,
+    specActions: PropTypes.object.isRequired,
     // layout props may be injected by the container; keep optional for safety
     layoutSelectors: PropTypes.object,
     layoutActions: PropTypes.object,
@@ -35,6 +36,7 @@ export default class BaseLayout extends React.Component {
     const AuthorizeBtnContainer = getComponent("AuthorizeBtnContainer", true)
     const FilterContainer = getComponent("FilterContainer", true)
     const TagsBadges = getComponent("TagsBadges", true)
+    const AddOperationButton = getComponent("AddOperationButton", true)
     const isSwagger2 = specSelectors.isSwagger2()
     const isOAS3 = specSelectors.isOAS3()
     const isOAS31 = specSelectors.isOAS31()
@@ -138,9 +140,7 @@ export default class BaseLayout extends React.Component {
           <FilterContainer />
           <Row>
             <Col mobile={12} desktop={12}>
-              <div style={{ textAlign: "right", marginBottom: "10px" }}>
-                <button className="btn" type="button">Add Operation</button>
-              </div>
+              {AddOperationButton ? <AddOperationButton /> : null}
             </Col>
           </Row>
           <Row>

@@ -68,6 +68,9 @@ import SvgAssets from "core/components/svg-assets"
 import Markdown from "core/components/providers/markdown"
 import BaseLayout from "core/components/layouts/base"
 import TagsBadges from "core/components/tags-badges"
+import AddOperationButton from "core/components/add-operation-button"
+import AddOperationDialog from "core/components/add-operation-dialog"
+import AddOperationForm from "core/components/add-operation-form"
 
 const CoreComponentsPlugin = () => ({
   components: {
@@ -140,6 +143,9 @@ const CoreComponentsPlugin = () => ({
     Example,
     ExamplesSelect,
     ExamplesSelectValueRetainer,
+    AddOperationButton,
+    AddOperationDialog,
+    AddOperationForm,
   },
 })
 
