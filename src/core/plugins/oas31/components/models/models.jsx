@@ -626,9 +626,9 @@ const Models = ({
    * Rendering.
    */
 
-  if (!hasSchemas || defaultModelsExpandDepth < 0) {
-    return null
-  }
+  // if (!hasSchemas || defaultModelsExpandDepth < 0) {
+  //   return null
+  // }
 
   return (
     <>

@@ -36,7 +36,7 @@ export default class TagsBadges extends React.Component {
     const ArrowUpIcon = getComponent && getComponent("ArrowUpIcon")
     const ArrowDownIcon = getComponent && getComponent("ArrowDownIcon")
 
-    if(!tags || tags.size === 0) {
+    if(!tags) {
       return null
     }
 
