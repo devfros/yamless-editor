@@ -38,6 +38,17 @@ const Models = ({
   const { getTitle } = fn.jsonSchema202012
 
   /**
+   * Sanitize schema name to ensure it's a valid JSON/YAML key
+   * Replaces invalid characters (like [], {}, (), spaces, etc.) with underscores
+   */
+  const sanitizeSchemaName = useCallback((name) => {
+    if (!name || typeof name !== "string") return ""
+    // Replace invalid characters for JSON/YAML keys with underscores
+    // Keep alphanumeric characters, underscores, and hyphens
+    return name.trim().replace(/[^a-zA-Z0-9_-]/g, "_")
+  }, [])
+
+  /**
    * Effects.
    */
   useEffect(() => {
@@ -265,6 +276,9 @@ const Models = ({
       // Build the schema object
       const schema = {}
       
+      // Set schema title to the original schema name
+      schema.title = schemaName
+      
       // Basic fields
       if (schemaData.description) schema.description = schemaData.description
       if (schemaData.example) schema.example = schemaData.example
@@ -406,15 +420,18 @@ const Models = ({
       if (schemaData.deprecated) schema.deprecated = true
       if (schemaData.nullable) schema.nullable = true
       
+      // Sanitize schema name before using as key
+      const sanitizedSchemaName = sanitizeSchemaName(schemaName)
+      
       // Add to spec
-      next.components.schemas[schemaName.trim()] = schema
+      next.components.schemas[sanitizedSchemaName] = schema
       
       const asString = JSON.stringify(next, null, 2)
       specActions.updateSpec(asString)
     } catch (e) {
       console.error("Error adding schema:", e)
     }
-  }, [specSelectors, specActions])
+  }, [specSelectors, specActions, sanitizeSchemaName])
 
   const handleEditSchema = useCallback((schemaName) => {
     const schema = schemas[schemaName]
@@ -448,6 +465,9 @@ const Models = ({
       // Build the schema object
       const schema = {}
       
+      // Set schema title to the original schema name
+      schema.title = editSchemaName
+      
       // Basic fields
       if (schemaData.description) schema.description = schemaData.description
       if (schemaData.example) schema.example = schemaData.example
@@ -589,8 +609,11 @@ const Models = ({
       if (schemaData.deprecated) schema.deprecated = true
       if (schemaData.nullable) schema.nullable = true
       
+      // Sanitize schema name before using as key
+      const sanitizedSchemaName = sanitizeSchemaName(editSchemaName)
+      
       // Update existing schema in spec
-      next.components.schemas[editSchemaName] = schema
+      next.components.schemas[sanitizedSchemaName] = schema
       
       const asString = JSON.stringify(next, null, 2)
       specActions.updateSpec(asString)
@@ -600,7 +623,7 @@ const Models = ({
     } catch (e) {
       console.error("Error updating schema:", e)
     }
-  }, [editSchemaName, specSelectors, specActions, closeEditDialog])
+  }, [editSchemaName, specSelectors, specActions, closeEditDialog, sanitizeSchemaName])
 
   const handleJSONSchema202012Ref = (schemaName) => (node) => {
     if (node !== null) {
