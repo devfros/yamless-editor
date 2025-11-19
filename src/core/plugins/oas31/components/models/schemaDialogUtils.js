@@ -330,12 +330,20 @@ export const parseSchemaToDialogFormat = (rawSchema) => {
  * Helper function to filter schemas based on search input
  * @param {string} searchTerm - The search term
  * @param {object} schemas - The schemas object
+ * @param {string|null} excludeSchema - Optional schema name to exclude from results
  * @returns {array} - Filtered schema keys
  */
-export const filterSchemas = (searchTerm, schemas) => {
-  if (!searchTerm.trim()) return Object.keys(schemas)
+export const filterSchemas = (searchTerm, schemas, excludeSchema = null) => {
+  let schemaKeys = Object.keys(schemas)
+  
+  // Exclude the specified schema if provided
+  if (excludeSchema) {
+    schemaKeys = schemaKeys.filter(key => key !== excludeSchema)
+  }
+  
+  if (!searchTerm.trim()) return schemaKeys
+  
   const lowerSearch = searchTerm.toLowerCase()
-  const schemaKeys = Object.keys(schemas)
   
   const startsWith = schemaKeys.filter(key => 
     key.toLowerCase().startsWith(lowerSearch)

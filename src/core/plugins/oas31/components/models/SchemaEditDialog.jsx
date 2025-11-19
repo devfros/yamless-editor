@@ -104,6 +104,21 @@ const SchemaEditDialog = ({
     onClose()
   }, [resetForm, onClose])
   
+  // Helper functions to get schema options with/without ref prefix, excluding current schema
+  const getSchemaOptionsWithRef = useCallback((searchTerm) => {
+    return filterSchemas(searchTerm, schemas, schemaName).map(schemaKey => ({
+      value: `${refPrefix}${schemaKey}`,
+      label: schemaKey
+    }))
+  }, [schemas, schemaName])
+  
+  const getSchemaOptionsWithoutRef = useCallback((searchTerm) => {
+    return filterSchemas(searchTerm, schemas, schemaName).map(schemaKey => ({
+      value: schemaKey,
+      label: schemaKey
+    }))
+  }, [schemas, schemaName])
+  
   const validateForm = useCallback(() => {
     const errors = {}
     
@@ -424,10 +439,7 @@ const SchemaEditDialog = ({
                         isOpen={compositionDropdownOpen}
                         onToggle={setCompositionDropdownOpen}
                         primitiveOptions={emptyPrimitiveOptions}
-                        options={filterSchemas(compositionSchemaSearch, schemas).map(schemaKey => ({
-                          value: schemaKey,
-                          label: schemaKey
-                        }))}
+                        options={getSchemaOptionsWithoutRef(compositionSchemaSearch)}
                       />
                     </div>
                     {validationErrors.compositionSchemas && (
@@ -476,7 +488,7 @@ const SchemaEditDialog = ({
                       </h5>
                       <label style={checkboxLabelStyle}>
                         <input 
-                          disabled
+                          disabled={editingPropertyIndex !== null}
                           type="checkbox" 
                           checked={currentProperty.isComposition} 
                           onChange={(e) => setCurrentProperty({
@@ -520,10 +532,7 @@ const SchemaEditDialog = ({
                             ? safeExtractSchemaName(currentProperty.type) 
                             : currentProperty.type}
                           primitiveOptions={primitiveTypeOptions}
-                          options={filterSchemas(propertyTypeSearch, schemas).map(schemaKey => ({
-                            value: `${refPrefix}${schemaKey}`,
-                            label: schemaKey
-                          }))}
+                          options={getSchemaOptionsWithRef(propertyTypeSearch)}
                         />
                       </div>
                     </div>
@@ -580,10 +589,7 @@ const SchemaEditDialog = ({
                               isOpen={compositionDropdownOpen}
                               onToggle={setCompositionDropdownOpen}
                               primitiveOptions={primitiveTypeOptions}
-                              options={filterSchemas(compositionSchemaSearch, schemas).map(schemaKey => ({
-                                value: schemaKey,
-                                label: schemaKey
-                              }))}
+                              options={getSchemaOptionsWithoutRef(compositionSchemaSearch)}
                             />
                           </div>
                           {validationErrors.compositionSchemas && (
@@ -611,10 +617,7 @@ const SchemaEditDialog = ({
                               ? safeExtractSchemaName(currentProperty.itemsType) 
                               : currentProperty.itemsType}
                             primitiveOptions={primitiveTypeOptions}
-                            options={filterSchemas(propertyItemsTypeSearch, schemas).map(schemaKey => ({
-                              value: `${refPrefix}${schemaKey}`,
-                              label: schemaKey
-                            }))}
+                            options={getSchemaOptionsWithRef(propertyItemsTypeSearch)}
                           />
                         </div>
                         {currentProperty.itemsType && 
@@ -713,10 +716,7 @@ const SchemaEditDialog = ({
                               ? safeExtractSchemaName(currentProperty.contentSchema) 
                               : currentProperty.contentSchema || ""}
                             primitiveOptions={emptyPrimitiveOptions}
-                            options={filterSchemas(contentSchemaSearch, schemas).map(schemaKey => ({
-                              value: `${refPrefix}${schemaKey}`,
-                              label: schemaKey
-                            }))}
+                            options={getSchemaOptionsWithRef(contentSchemaSearch)}
                           />
                         </div>
                       </div>
@@ -828,10 +828,7 @@ const SchemaEditDialog = ({
                         ? safeExtractSchemaName(currentSchemaData.itemsType) 
                         : currentSchemaData.itemsType}
                       primitiveOptions={primitiveTypeOptions}
-                      options={filterSchemas(itemsTypeSearch, schemas).map(schemaKey => ({
-                        value: `${refPrefix}${schemaKey}`,
-                        label: schemaKey
-                      }))}
+                      options={getSchemaOptionsWithRef(itemsTypeSearch)}
                     />
                   </div>
                 </div>
