@@ -232,7 +232,7 @@ export default class Parameters extends Component {
               <h4 className="opblock-title">Parameters</h4>
             </div>
           )}
-          {!isEditing && allowTryItOut ? (
+          {/* {!isEditing && allowTryItOut ? (
             <TryItOutButton
               isOAS3={specSelectors.isOAS3()}
               hasUserEditedBody={oas3Selectors.hasUserEditedBody(...pathMethod)}
@@ -240,7 +240,7 @@ export default class Parameters extends Component {
               onCancelClick={this.props.onCancelClick}
               onTryoutClick={onTryoutClick}
               onResetClick={() => onResetClick(pathMethod)}/>
-          ) : null}
+          ) : null} */}
           {isEditing && this.state.parametersVisible ? (
             <button
               className="btn authorize"
