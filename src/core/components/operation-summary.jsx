@@ -256,20 +256,20 @@ export default class OperationSummary extends PureComponent {
               <button 
                 className="opblock-summary-edit-btn"
                 onClick={this.handleEditClick}
-                title="Edit mode for operation"
+                title="Edit"
               >
                 <EditIcon />
               </button>
               <button 
                 className="opblock-summary-duplicate-btn"
-                title="Create operation from this"
+                title="Create from"
                 onClick={this.handleDuplicateClick}
               >
                 <DuplicateIcon />
               </button>
               <button 
                 className="opblock-summary-delete-btn"
-                title="Delete operation"
+                title="Delete"
                 onClick={this.handleDeleteClick}
               >
                 <TrashIcon />
@@ -294,16 +294,18 @@ export default class OperationSummary extends PureComponent {
             </>
           )
         )}
-        {
+        {/* {
           allowAnonymous || isEditing ? null :
             <AuthorizeOperationBtn
               isAuthorized={isAuthorized}
               onClick={() => {
+                console.log("authorize operation btn clicked")
                 const applicableDefinitions = authSelectors.definitionsForRequirements(security)
+                console.log("applicableDefinitions", applicableDefinitions)
                 authActions.showDefinitions(applicableDefinitions)
               }}
             />
-        }
+        } */}
         <JumpToPath path={specPath} />{/* TODO: use wrapComponents here, swagger-ui doesn't care about jumpToPath */}
         <button
           aria-label={`${currentMethod} ${currentPath.replace(/\//g, "\u200b/")}`}
