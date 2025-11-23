@@ -5,7 +5,7 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import SearchableSelect from "core/plugins/oas31/components/models/SearchableSelect"
-import { filterSchemas } from "core/plugins/oas31/components/models/schemaDialogUtils"
+import { filterSchemas, getSchemaTitleFromRef } from "core/plugins/oas31/components/models/schemaDialogUtils"
 import {
   formDataToParameter,
   parameterToFormData,
@@ -178,7 +178,7 @@ export default class ParameterEditForm extends Component {
     const schemaOptions = formData.in === "query" 
       ? filterSchemas(typeSearch, schemas).map(schemaKey => ({
           value: `#/components/schemas/${schemaKey}`,
-          label: schemaKey
+          label: schemas[schemaKey]?.title || schemaKey
         }))
       : []
 
@@ -251,7 +251,7 @@ export default class ParameterEditForm extends Component {
                 isOpen={typeDropdownOpen}
                 onToggle={(open) => this.setState({ typeDropdownOpen: open })}
                 displayValue={isSchemaReference(formData.type) 
-                  ? extractSchemaName(formData.type) 
+                  ? getSchemaTitleFromRef(formData.type, schemas) 
                   : formData.type}
                 primitiveOptions={primitiveTypeOptions}
                 options={schemaOptions}
@@ -305,13 +305,13 @@ export default class ParameterEditForm extends Component {
                 isOpen={itemsTypeDropdownOpen}
                 onToggle={(open) => this.setState({ itemsTypeDropdownOpen: open })}
                 displayValue={isSchemaReference(formData.itemsType) 
-                  ? extractSchemaName(formData.itemsType) 
+                  ? getSchemaTitleFromRef(formData.itemsType, schemas) 
                   : formData.itemsType}
                 primitiveOptions={primitiveTypeOptions}
                 options={formData.in === "query" 
                   ? filterSchemas(itemsTypeSearch, schemas).map(schemaKey => ({
                       value: `#/components/schemas/${schemaKey}`,
-                      label: schemaKey
+                      label: schemas[schemaKey]?.title || schemaKey
                     }))
                   : []}
               />

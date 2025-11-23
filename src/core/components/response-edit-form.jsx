@@ -6,7 +6,7 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import ImPropTypes from "react-immutable-proptypes"
 import SearchableSelect from "core/plugins/oas31/components/models/SearchableSelect"
-import { filterSchemas } from "core/plugins/oas31/components/models/schemaDialogUtils"
+import { filterSchemas, getSchemaTitleFromRef } from "core/plugins/oas31/components/models/schemaDialogUtils"
 import {
   getPrimitiveTypeOptions,
   isSchemaReference,
@@ -507,7 +507,7 @@ export default class ResponseEditForm extends Component {
     const schemas = specSelectors.selectSchemas()
     const schemaOptions = filterSchemas(typeSearch, schemas).map(schemaKey => ({
       value: `#/components/schemas/${schemaKey}`,
-      label: schemaKey
+      label: schemas[schemaKey]?.title || schemaKey
     }))
 
     // Filter contentTypeOptions based on selected dataType and mode
@@ -676,7 +676,7 @@ export default class ResponseEditForm extends Component {
                 isOpen={typeDropdownOpen}
                 onToggle={(open) => this.setState({ typeDropdownOpen: open })}
                 displayValue={isSchemaReference(schemaType) 
-                  ? extractSchemaName(schemaType) 
+                  ? getSchemaTitleFromRef(schemaType, schemas) 
                   : schemaType}
                 primitiveOptions={allPrimitiveTypeOptions}
                 options={schemaOptions}
