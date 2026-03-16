@@ -20,7 +20,7 @@ export default class AddOperationForm extends Component {
   constructor(props) {
     super(props)
     const { sourceOperation } = props
-    
+
     this.state = {
       method: sourceOperation ? sourceOperation.method : "get",
       path: sourceOperation ? sourceOperation.path : "",
@@ -85,9 +85,9 @@ export default class AddOperationForm extends Component {
         const name = tag.get("name")
         return name
           ? {
-              value: name,
-              label: name,
-            }
+            value: name,
+            label: name,
+          }
           : null
       })
       .filter(Boolean)
@@ -170,7 +170,7 @@ export default class AddOperationForm extends Component {
 
       // Create new operation object
       let newOperation
-      
+
       if (sourceOperation) {
         // Duplicate mode: copy all data from source operation
         const sourceOp = sourceOperation.operation
@@ -242,7 +242,7 @@ export default class AddOperationForm extends Component {
         path: "",
         tag: "",
       }
-      
+
       this.setState({
         ...resetState,
         tagSearch: "",
@@ -275,6 +275,23 @@ export default class AddOperationForm extends Component {
 
     return (
       <form onSubmit={this.handleSubmit}>
+        <div className="form-field">
+          <label className="form-label">
+            Tag <span className="required">*</span>
+          </label>
+          <SearchableSelect
+            value={tag}
+            onChange={this.handleTagChange}
+            placeholder="Select tag..."
+            searchValue={tagSearch}
+            onSearchChange={this.handleTagSearchChange}
+            isOpen={tagDropdownOpen}
+            onToggle={this.handleTagToggle}
+            displayValue={tag}
+            options={tagOptions}
+            primitiveOptions={[]}
+          />
+        </div>
 
         <div className="form-field">
           <label className="form-label">
@@ -305,10 +322,10 @@ export default class AddOperationForm extends Component {
           <label className="form-label">
             Method <span className="required">*</span>
           </label>
-          <select 
-            className="form-input" 
-            value={method} 
-            onChange={this.handleMethodChange} 
+          <select
+            className="form-input"
+            value={method}
+            onChange={this.handleMethodChange}
             required
             disabled={isDuplicateMode}
           >
@@ -319,24 +336,6 @@ export default class AddOperationForm extends Component {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="form-field">
-          <label className="form-label">
-            Tag <span className="required">*</span>
-          </label>
-          <SearchableSelect
-            value={tag}
-            onChange={this.handleTagChange}
-            placeholder="Select tag..."
-            searchValue={tagSearch}
-            onSearchChange={this.handleTagSearchChange}
-            isOpen={tagDropdownOpen}
-            onToggle={this.handleTagToggle}
-            displayValue={tag}
-            options={tagOptions}
-            primitiveOptions={[]}
-          />
         </div>
 
         <div className="modal-actions-row">
