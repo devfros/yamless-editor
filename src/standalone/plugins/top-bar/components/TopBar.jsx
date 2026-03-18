@@ -3,7 +3,7 @@ import PropTypes from "prop-types"
 import { Map as ImmutableMap } from "immutable"
 import YAML, { JSON_SCHEMA } from "js-yaml"
 
-import {parseSearch, serializeSearch} from "core/utils"
+import { parseSearch, serializeSearch } from "core/utils"
 import { isOAS31 } from "core/plugins/oas31/fn"
 
 const GITHUB_API = "https://api.github.com"
@@ -30,7 +30,7 @@ class TopBar extends React.Component {
     super(props, context)
     const savedToken = localStorage.getItem(LOCALSTORAGE_TOKEN_KEY) || null
     this.state = {
-      isTopbarVisible: false,
+      isTopbarVisible: true,
       url: props.specSelectors.url(),
       selectedIndex: 0,
       githubToken: savedToken,
@@ -53,18 +53,16 @@ class TopBar extends React.Component {
     const configs = this.props.getConfigs()
     const urls = configs.urls || []
 
-    if(urls && urls.length) {
+    if (urls && urls.length) {
       var targetIndex = this.state.selectedIndex
       let search = parseSearch()
       let primaryName = search["urls.primaryName"] || configs.urls.primaryName
-      if(primaryName)
-      {
+      if (primaryName) {
         urls.forEach((spec, i) => {
-          if(spec.name === primaryName)
-            {
-              this.setState({selectedIndex: i})
-              targetIndex = i
-            }
+          if (spec.name === primaryName) {
+            this.setState({ selectedIndex: i })
+            targetIndex = i
+          }
         })
       }
 
@@ -90,15 +88,14 @@ class TopBar extends React.Component {
 
   // ── Existing spec helpers ──
 
-  onUrlChange =(e)=> {
-    let {target: {value}} = e
-    this.setState({url: value})
+  onUrlChange = (e) => {
+    let { target: { value } } = e
+    this.setState({ url: value })
   }
 
   flushAuthData() {
     const { persistAuthorization } = this.props.getConfigs()
-    if (persistAuthorization)
-    {
+    if (persistAuthorization) {
       return
     }
     this.props.authActions.restoreAuthorization({
@@ -116,30 +113,30 @@ class TopBar extends React.Component {
     const { specSelectors } = this.props
     try {
       let specText = specSelectors.specStr()
-      if(!specText) {
+      if (!specText) {
         const specJson = specSelectors.specJson()
-        if(specJson && typeof specJson.toJS === "function") {
+        if (specJson && typeof specJson.toJS === "function") {
           specText = JSON.stringify(specJson.toJS(), null, 2)
         }
       }
-      if(!specText) {
+      if (!specText) {
         return
       }
       const url = this.props.specSelectors.url()
       const fallbackName = "openapi.json"
       let filename = fallbackName
       try {
-        if(url) {
+        if (url) {
           const parsed = new window.URL(url, window.location.href)
           const pathname = parsed.pathname || ""
           const last = pathname.split("/").filter(Boolean).pop()
-          if(last && /\.ya?ml$/i.test(last)) {
+          if (last && /\.ya?ml$/i.test(last)) {
             filename = last.replace(/\.ya?ml$/i, ".json")
-          } else if(last && /\.json$/i.test(last)) {
+          } else if (last && /\.json$/i.test(last)) {
             filename = last
           }
         }
-      } catch(e) {
+      } catch (e) {
         // ignore filename parsing errors and use fallback
       }
 
@@ -269,7 +266,7 @@ class TopBar extends React.Component {
   }
 
 
-  onUrlSelect =(e)=> {
+  onUrlSelect = (e) => {
     let url = e.target.value || e.target.href
     this.loadSpec(url)
     this.setSelectedUrl(url)
@@ -285,7 +282,7 @@ class TopBar extends React.Component {
     let search = parseSearch()
     search["urls.primaryName"] = spec.name
     const newUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`
-    if(window && window.history && window.history.pushState) {
+    if (window && window.history && window.history.pushState) {
       window.history.replaceState(null, "", `${newUrl}?${serializeSearch(search)}`)
     }
   }
@@ -294,22 +291,20 @@ class TopBar extends React.Component {
     const configs = this.props.getConfigs()
     const urls = configs.urls || []
 
-    if(urls && urls.length) {
-      if(selectedUrl)
-      {
+    if (urls && urls.length) {
+      if (selectedUrl) {
         urls.forEach((spec, i) => {
-          if(spec.url === selectedUrl)
-            {
-              this.setState({selectedIndex: i})
-              this.setSearch(spec)
-            }
+          if (spec.url === selectedUrl) {
+            this.setState({ selectedIndex: i })
+            this.setSearch(spec)
+          }
         })
       }
     }
   }
 
-  onFilterChange =(e) => {
-    let {target: {value}} = e
+  onFilterChange = (e) => {
+    let { target: { value } } = e
     this.props.layoutActions.updateFilter(value)
   }
 
@@ -645,7 +640,7 @@ class TopBar extends React.Component {
         <div className="wrapper">
           <div className="topbar-wrapper">
             <Link>
-              <Logo/>
+              <Logo />
             </Link>
             <form className="download-url-wrapper" onSubmit={formOnSubmit}>
               {control.map((el, i) => cloneElement(el, { key: i }))}
